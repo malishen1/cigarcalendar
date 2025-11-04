@@ -3,10 +3,12 @@ import CigarEntryCard, { type CigarEntry } from "@/components/CigarEntryCard";
 import { Button } from "@/components/ui/button";
 import { Cigarette, Star, Calendar, TrendingUp, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 import type { Cigar } from "@shared/schema";
 
 export default function Dashboard() {
+  const [, setLocation] = useLocation();
+  
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/stats'],
   });
@@ -40,16 +42,15 @@ export default function Dashboard() {
               Track and savor every moment
             </p>
           </div>
-          <Link href="/log">
-            {(props) => (
-              <Button asChild size="lg" className="gap-2" data-testid="button-quick-log">
-                <a {...props}>
-                  <Plus className="w-5 h-5" />
-                  Quick Log
-                </a>
-              </Button>
-            )}
-          </Link>
+          <Button 
+            onClick={() => setLocation("/log")}
+            size="lg" 
+            className="gap-2" 
+            data-testid="button-quick-log"
+          >
+            <Plus className="w-5 h-5" />
+            Quick Log
+          </Button>
         </div>
 
         {statsLoading ? (
@@ -117,16 +118,15 @@ export default function Dashboard() {
             <p className="text-muted-foreground mb-6">
               Start tracking your cigar journey today
             </p>
-            <Link href="/log">
-              {(props) => (
-                <Button asChild size="lg" className="gap-2" data-testid="button-log-first">
-                  <a {...props}>
-                    <Plus className="w-5 h-5" />
-                    Log Your First Cigar
-                  </a>
-                </Button>
-              )}
-            </Link>
+            <Button
+              onClick={() => setLocation("/log")}
+              size="lg"
+              className="gap-2"
+              data-testid="button-log-first"
+            >
+              <Plus className="w-5 h-5" />
+              Log Your First Cigar
+            </Button>
           </div>
         )}
       </div>
