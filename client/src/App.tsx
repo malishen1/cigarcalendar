@@ -11,7 +11,6 @@ import History from "@/pages/History";
 import Releases from "@/pages/Releases";
 import Events from "@/pages/Events";
 import Community from "@/pages/Community";
-import Users from "@/pages/Users";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 import Footer from "@/components/Footer";
@@ -30,7 +29,6 @@ function Navigation() {
     { path: "/releases", label: "Releases", icon: Sparkles },
     { path: "/events", label: "Events", icon: Calendar },
     { path: "/community", label: "Community", icon: UsersIcon },
-    { path: "/users", label: "Users", icon: UsersIcon },
   ];
 
   return (
@@ -139,7 +137,6 @@ function Router() {
       <Route path="/releases" component={Releases} />
       <Route path="/events" component={Events} />
       <Route path="/community" component={Community} />
-      <Route path="/users" component={Users} />
       <Route component={NotFound} />
     </Switch>
   );
