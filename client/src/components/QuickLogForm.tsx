@@ -50,7 +50,7 @@ export default function QuickLogForm({ onSubmit, defaultValues, isEdit }: QuickL
       cigarName,
       brand,
       rating,
-      date: new Date(date),
+      date: date,
       duration: duration ? parseInt(duration) : undefined,
       strength,
       notes,

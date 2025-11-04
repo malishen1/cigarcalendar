@@ -13,7 +13,7 @@ export default function EditCigar() {
   const cigarId = params?.id;
 
   const { data: cigar, isLoading } = useQuery<Cigar>({
-    queryKey: ['/api/cigars', cigarId],
+    queryKey: [`/api/cigars/${cigarId}`],
     enabled: !!cigarId,
   });
 
@@ -73,7 +73,7 @@ export default function EditCigar() {
     duration: cigar.duration || undefined,
     strength: cigar.strength || undefined,
     notes: cigar.notes || "",
-    addToCalendar: false,
+    addToCalendar: !cigar.calendarEventId,
   };
 
   return (
