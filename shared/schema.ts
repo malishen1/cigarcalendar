@@ -75,6 +75,8 @@ export const insertReleaseSchema = createInsertSchema(releases).omit({
 
 export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
+}).extend({
+  date: z.coerce.date(),
 });
 
 export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({

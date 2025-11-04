@@ -257,6 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const event = await storage.createEvent(parsed);
       res.status(201).json(event);
     } catch (error) {
+      console.error("Event validation error:", error);
       res.status(400).json({ error: "Invalid event data" });
     }
   });
