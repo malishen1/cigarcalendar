@@ -11,10 +11,11 @@ import History from "@/pages/History";
 import Releases from "@/pages/Releases";
 import Events from "@/pages/Events";
 import Community from "@/pages/Community";
+import Users from "@/pages/Users";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 import Footer from "@/components/Footer";
-import { Home, Plus, History as HistoryIcon, Calendar, Sparkles, Users, LogOut } from "lucide-react";
+import { Home, Plus, History as HistoryIcon, Calendar, Sparkles, Users as UsersIcon, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -28,7 +29,8 @@ function Navigation() {
     { path: "/history", label: "History", icon: HistoryIcon },
     { path: "/releases", label: "Releases", icon: Sparkles },
     { path: "/events", label: "Events", icon: Calendar },
-    { path: "/community", label: "Community", icon: Users },
+    { path: "/community", label: "Community", icon: UsersIcon },
+    { path: "/users", label: "Users", icon: UsersIcon },
   ];
 
   return (
@@ -137,6 +139,7 @@ function Router() {
       <Route path="/releases" component={Releases} />
       <Route path="/events" component={Events} />
       <Route path="/community" component={Community} />
+      <Route path="/users" component={Users} />
       <Route component={NotFound} />
     </Switch>
   );

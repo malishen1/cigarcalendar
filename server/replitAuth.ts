@@ -38,9 +38,12 @@ export function getSession() {
     store: sessionStore, // undefined in dev = memory store
     resave: false,
     saveUninitialized: false,
+    name: 'cigar.sid', // Custom name for clarity
+    proxy: true, // Trust proxy for HTTPS
     cookie: {
       httpOnly: true,
-      secure: isProduction, // Only secure in production
+      secure: 'auto', // Auto-detect based on connection
+      sameSite: 'lax', // Better mobile compatibility
       maxAge: sessionTtl,
     },
   });
