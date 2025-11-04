@@ -64,6 +64,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertCigarSchema = createInsertSchema(cigars).omit({
   id: true,
   calendarEventId: true,
+}).extend({
+  date: z.coerce.date(),
 });
 
 export const insertReleaseSchema = createInsertSchema(releases).omit({
