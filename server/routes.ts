@@ -285,6 +285,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/events/:id/rsvp", async (req, res) => {
+    try {
+      const updated = await storage.rsvpEvent(req.params.id);
+      if (!updated) {
+        return res.status(400).json({ error: "Event not found or at max capacity" });
+      }
+      res.json(updated);
+    } catch (error) {
+      console.error("Error RSVPing to event:", error);
+      res.status(500).json({ error: "Failed to RSVP to event" });
+    }
+  });
+
   // Community post routes
   app.get("/api/community", async (req, res) => {
     try {

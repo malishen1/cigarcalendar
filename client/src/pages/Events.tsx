@@ -38,6 +38,7 @@ export default function Events() {
     type: event.type as any,
     description: event.description || undefined,
     attendees: event.attendees || undefined,
+    maxCapacity: event.maxCapacity || undefined,
     link: event.link || undefined,
   }));
 

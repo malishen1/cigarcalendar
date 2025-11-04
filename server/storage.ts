@@ -180,11 +180,29 @@ export class MemStorage implements IStorage {
       location: insertEvent.location,
       type: insertEvent.type,
       description: insertEvent.description ?? null,
-      attendees: insertEvent.attendees ?? null,
+      attendees: insertEvent.attendees ?? 0,
+      maxCapacity: insertEvent.maxCapacity ?? null,
       link: insertEvent.link ?? null
     };
     this.events.set(id, event);
     return event;
+  }
+
+  async rsvpEvent(id: string): Promise<Event | null> {
+    const event = this.events.get(id);
+    if (!event) return null;
+    
+    // Check if event is at max capacity
+    if (event.maxCapacity && event.attendees !== null && event.attendees >= event.maxCapacity) {
+      return null;
+    }
+    
+    const updated = { 
+      ...event, 
+      attendees: (event.attendees ?? 0) + 1 
+    };
+    this.events.set(id, updated);
+    return updated;
   }
 
   async updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined> {

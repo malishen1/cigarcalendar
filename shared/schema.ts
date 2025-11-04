@@ -38,7 +38,8 @@ export const events = pgTable("events", {
   location: text("location").notNull(),
   type: text("type").notNull(),
   description: text("description"),
-  attendees: integer("attendees"),
+  attendees: integer("attendees").default(0),
+  maxCapacity: integer("max_capacity"),
   link: text("link"),
 });
 
