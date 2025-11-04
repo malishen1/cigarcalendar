@@ -4,56 +4,89 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus } from "lucide-react";
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { CommunityPost as CommunityPostSchema } from "@shared/schema";
 
 export default function Community() {
   const [newPost, setNewPost] = useState("");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [posts] = useState<CommunityPostType[]>([
-    {
-      id: '1',
-      userName: 'James Mitchell',
-      cigarName: 'Padron 1964 Anniversary',
-      brand: 'Padron Cigars',
-      rating: 5,
-      comment: 'Absolutely incredible smoke. The complexity and smoothness are unmatched. Highly recommend!',
-      timestamp: new Date(Date.now() - 1000 * 60 * 45),
-      likes: 12,
-      comments: 3,
+  const { data: posts = [], isLoading } = useQuery<CommunityPostSchema[]>({
+    queryKey: ['/api/community'],
+  });
+
+  const createPostMutation = useMutation({
+    mutationFn: async (post: { userName: string; cigarName: string; rating: number; comment?: string }) => {
+      return apiRequest('/api/community', {
+        method: 'POST',
+        body: JSON.stringify(post),
+      });
     },
-    {
-      id: '2',
-      userName: 'Sarah Thompson',
-      cigarName: 'Montecristo No. 2',
-      brand: 'Habanos S.A.',
-      rating: 5,
-      comment: 'Classic Cuban excellence. Perfect draw and rich flavors throughout. A staple in my rotation.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 120),
-      likes: 8,
-      comments: 2,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/community'] });
+      setNewPost('');
+      toast({
+        title: "Post created",
+        description: "Your post has been shared with the community.",
+      });
     },
-    {
-      id: '3',
-      userName: 'David Chen',
-      cigarName: 'Arturo Fuente Opus X',
-      brand: 'Arturo Fuente',
-      rating: 5,
-      comment: 'Finally got my hands on one! Worth the wait. Exceptional construction and flavor profile.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 180),
-      likes: 15,
-      comments: 5,
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create post.",
+      });
+    }
+  });
+
+  const likeMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/community/${id}/like`, {
+        method: 'POST',
+      });
     },
-    {
-      id: '4',
-      userName: 'Michael Roberts',
-      cigarName: 'Oliva Serie V Melanio',
-      brand: 'Oliva Cigar Co.',
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/community'] });
+    }
+  });
+
+  const commentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/community/${id}/comment`, {
+        method: 'POST',
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/community'] });
+    }
+  });
+
+  const formattedPosts: CommunityPostType[] = posts.map(post => ({
+    id: post.id,
+    userName: post.userName,
+    userAvatar: post.userAvatar || undefined,
+    cigarName: post.cigarName,
+    brand: post.brand || undefined,
+    rating: post.rating,
+    comment: post.comment || undefined,
+    timestamp: new Date(post.timestamp),
+    likes: post.likes,
+    comments: post.comments,
+  }));
+
+  const handlePost = () => {
+    if (!newPost.trim()) return;
+    
+    createPostMutation.mutate({
+      userName: "Anonymous User",
+      cigarName: "Custom Cigar",
       rating: 4,
-      comment: 'Great value for the price. Bold and flavorful with good construction.',
-      timestamp: new Date(Date.now() - 1000 * 60 * 240),
-      likes: 6,
-      comments: 1,
-    },
-  ]);
+      comment: newPost,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -78,10 +111,8 @@ export default function Community() {
           />
           <Button
             className="gap-2"
-            onClick={() => {
-              console.log('New post:', newPost);
-              setNewPost('');
-            }}
+            onClick={handlePost}
+            disabled={!newPost.trim() || createPostMutation.isPending}
             data-testid="button-post"
           >
             <Plus className="w-4 h-4" />
@@ -89,22 +120,36 @@ export default function Community() {
           </Button>
         </Card>
 
-        <div className="space-y-4">
-          {posts.map((post) => (
-            <CommunityPost
-              key={post.id}
-              post={post}
-              onLike={(id) => console.log('Like', id)}
-              onComment={(id) => console.log('Comment', id)}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 bg-card rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : formattedPosts.length > 0 ? (
+          <div className="space-y-4">
+            {formattedPosts.map((post) => (
+              <CommunityPost
+                key={post.id}
+                post={post}
+                onLike={(id) => likeMutation.mutate(id)}
+                onComment={(id) => commentMutation.mutate(id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground">No posts yet. Be the first to share!</p>
+          </div>
+        )}
 
-        <div className="text-center py-8">
-          <Button variant="outline" data-testid="button-load-more">
-            Load More
-          </Button>
-        </div>
+        {formattedPosts.length > 0 && (
+          <div className="text-center py-8">
+            <Button variant="outline" data-testid="button-load-more">
+              Load More
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

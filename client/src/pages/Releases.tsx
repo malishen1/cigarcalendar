@@ -9,63 +9,40 @@ import {
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { Release } from "@shared/schema";
 
 export default function Releases() {
   const [searchQuery, setSearchQuery] = useState("");
   const [regionFilter, setRegionFilter] = useState("all");
 
-  const [releases] = useState<CigarRelease[]>([
-    {
-      id: '1',
-      name: 'Davidoff Year of the Snake 2025',
-      brand: 'Davidoff',
-      releaseDate: new Date('2025-12-15'),
-      region: 'UK & Europe',
-      availability: 'Pre-order',
-      description: 'Limited edition release celebrating the Year of the Snake with unique blend and packaging.',
-      notified: false,
-    },
-    {
-      id: '2',
-      name: 'Cohiba Talismán',
-      brand: 'Habanos S.A.',
-      releaseDate: new Date('2025-11-20'),
-      region: 'Europe',
-      availability: 'Coming Soon',
-      description: 'New vitola in the Cohiba Línea Clásica with exceptional wrapper quality.',
-      notified: true,
-    },
-    {
-      id: '3',
-      name: 'Arturo Fuente Opus X 2025',
-      brand: 'Arturo Fuente',
-      releaseDate: new Date('2025-11-10'),
-      region: 'UK & Europe',
-      availability: 'Limited',
-      description: 'Annual limited release of the legendary Opus X line.',
-      notified: false,
-    },
-    {
-      id: '4',
-      name: 'Padrón 1926 Serie No. 90',
-      brand: 'Padrón Cigars',
-      releaseDate: new Date('2025-12-01'),
-      region: 'UK',
-      availability: 'Coming Soon',
-      description: 'Celebrating 90 years of excellence with this special edition.',
-      notified: false,
-    },
-    {
-      id: '5',
-      name: 'Montecristo Línea 1935',
-      brand: 'Habanos S.A.',
-      releaseDate: new Date('2025-10-28'),
-      region: 'Europe',
-      availability: 'Released',
-      description: 'Premium line commemorating the brand\'s founding year.',
-      notified: true,
-    },
-  ]);
+  const { data: releases = [], isLoading } = useQuery<Release[]>({
+    queryKey: ['/api/releases'],
+  });
+
+  const filteredReleases = releases.filter((release) => {
+    const matchesSearch = searchQuery === "" || 
+      release.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      release.brand.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesRegion = regionFilter === "all" ||
+      (regionFilter === "uk" && release.region.toLowerCase().includes("uk")) ||
+      (regionFilter === "europe" && release.region.toLowerCase().includes("europe") && !release.region.toLowerCase().includes("uk")) ||
+      (regionFilter === "uk-europe" && (release.region.toLowerCase().includes("uk") || release.region.toLowerCase().includes("europe")));
+    
+    return matchesSearch && matchesRegion;
+  });
+
+  const formattedReleases: CigarRelease[] = filteredReleases.map(release => ({
+    id: release.id,
+    name: release.name,
+    brand: release.brand,
+    releaseDate: new Date(release.releaseDate),
+    region: release.region,
+    availability: release.availability as any,
+    description: release.description || undefined,
+    notified: false,
+  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,15 +84,27 @@ export default function Releases() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          {releases.map((release) => (
-            <ReleaseCard
-              key={release.id}
-              release={release}
-              onToggleNotification={(id) => console.log('Toggle notification', id)}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 bg-card rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : formattedReleases.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4">
+            {formattedReleases.map((release) => (
+              <ReleaseCard
+                key={release.id}
+                release={release}
+                onToggleNotification={(id) => console.log('Toggle notification', id)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground">No releases found</p>
+          </div>
+        )}
       </div>
     </div>
   );

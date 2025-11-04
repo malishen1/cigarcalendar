@@ -9,63 +9,37 @@ import {
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { Event } from "@shared/schema";
 
 export default function Events() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const [events] = useState<CigarEvent[]>([
-    {
-      id: '1',
-      name: 'London Cigar Festival 2025',
-      date: new Date('2025-12-01T14:00:00'),
-      location: 'London, UK',
-      type: 'Festival',
-      description: 'Annual gathering of cigar enthusiasts featuring tastings, seminars, and exclusive releases.',
-      attendees: 250,
-      link: '#',
-    },
-    {
-      id: '2',
-      name: 'Virtual Lounge: Cuban Heritage Night',
-      date: new Date('2025-11-15T19:00:00'),
-      location: 'Online',
-      type: 'Virtual Lounge',
-      description: 'Join fellow aficionados online for a guided tasting of classic Cuban cigars.',
-      attendees: 85,
-      link: '#',
-    },
-    {
-      id: '3',
-      name: 'Davidoff Exclusive Tasting',
-      date: new Date('2025-11-22T18:30:00'),
-      location: 'Manchester, UK',
-      type: 'Tasting',
-      description: 'Experience the latest Davidoff releases with expert guidance.',
-      attendees: 40,
-      link: '#',
-    },
-    {
-      id: '4',
-      name: 'Cohiba Anniversary Release Party',
-      date: new Date('2025-11-28T20:00:00'),
-      location: 'Paris, France',
-      type: 'Release Party',
-      description: 'Celebrate the launch of the new Cohiba Anniversary edition.',
-      attendees: 120,
-      link: '#',
-    },
-    {
-      id: '5',
-      name: 'Edinburgh Cigar Weekend',
-      date: new Date('2025-12-08T10:00:00'),
-      location: 'Edinburgh, Scotland',
-      type: 'Festival',
-      description: 'Two-day celebration featuring masterclasses, tastings, and networking.',
-      attendees: 180,
-      link: '#',
-    },
-  ]);
+  const { data: events = [], isLoading } = useQuery<Event[]>({
+    queryKey: ['/api/events'],
+  });
+
+  const filteredEvents = events.filter((event) => {
+    const matchesSearch = searchQuery === "" || 
+      event.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      event.location.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesType = typeFilter === "all" || event.type === typeFilter;
+    
+    return matchesSearch && matchesType;
+  });
+
+  const formattedEvents: CigarEvent[] = filteredEvents.map(event => ({
+    id: event.id,
+    name: event.name,
+    date: new Date(event.date),
+    location: event.location,
+    type: event.type as any,
+    description: event.description || undefined,
+    attendees: event.attendees || undefined,
+    link: event.link || undefined,
+  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,11 +82,23 @@ export default function Events() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          {events.map((event) => (
-            <EventCard key={event.id} event={event} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 bg-card rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : formattedEvents.length > 0 ? (
+          <div className="grid grid-cols-1 gap-4">
+            {formattedEvents.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground">No events found</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -32,14 +32,16 @@ function Navigation() {
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16">
             <Link href="/">
-              <a className="flex items-center gap-2 hover-elevate px-2 py-1 rounded-md transition-all" data-testid="link-home">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-serif font-bold text-lg">C</span>
-                </div>
-                <span className="font-serif font-semibold text-xl hidden sm:inline">
-                  Cigar Tracker
-                </span>
-              </a>
+              {(props) => (
+                <a {...props} className="flex items-center gap-2 hover-elevate px-2 py-1 rounded-md transition-all" data-testid="link-home">
+                  <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+                    <span className="text-primary-foreground font-serif font-bold text-lg">C</span>
+                  </div>
+                  <span className="font-serif font-semibold text-xl hidden sm:inline">
+                    Cigar Tracker
+                  </span>
+                </a>
+              )}
             </Link>
 
             <nav className="hidden lg:flex items-center gap-2">
@@ -48,16 +50,19 @@ function Navigation() {
                 const isActive = location === item.path;
                 return (
                   <Link key={item.path} href={item.path}>
-                    <a>
+                    {(props) => (
                       <Button
+                        asChild
                         variant={isActive ? "secondary" : "ghost"}
                         className="gap-2"
                         data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
                       >
-                        <Icon className="w-4 h-4" />
-                        {item.label}
+                        <a {...props}>
+                          <Icon className="w-4 h-4" />
+                          {item.label}
+                        </a>
                       </Button>
-                    </a>
+                    )}
                   </Link>
                 );
               })}
@@ -75,12 +80,14 @@ function Navigation() {
             const isActive = location === item.path;
             return (
               <Link key={item.path} href={item.path}>
-                <a className="flex flex-col items-center justify-center gap-1 h-full">
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                  <span className={`text-xs ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                    {item.label}
-                  </span>
-                </a>
+                {(props) => (
+                  <a {...props} className="flex flex-col items-center justify-center gap-1 h-full">
+                    <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                    <span className={`text-xs ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                      {item.label}
+                    </span>
+                  </a>
+                )}
               </Link>
             );
           })}

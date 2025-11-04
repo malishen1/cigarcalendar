@@ -10,80 +10,78 @@ import {
 } from "@/components/ui/select";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Cigar } from "@shared/schema";
 
 export default function History() {
   const [searchQuery, setSearchQuery] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [sortBy, setSortBy] = useState("date-desc");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const [entries] = useState<CigarEntry[]>([
-    {
-      id: '1',
-      cigarName: 'Montecristo No. 2',
-      brand: 'Habanos S.A.',
-      rating: 5,
-      date: new Date('2025-11-03T19:30:00'),
-      notes: 'Exceptional smoke with rich, earthy flavors and hints of coffee and dark chocolate.',
-      duration: 75,
-      strength: 'Medium',
-      hasCalendarEvent: true,
+  const { data: cigars = [], isLoading } = useQuery<Cigar[]>({
+    queryKey: ['/api/cigars'],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/cigars/${id}`, {
+        method: 'DELETE',
+      });
     },
-    {
-      id: '2',
-      cigarName: 'Padron 1964 Anniversary',
-      brand: 'Padron Cigars',
-      rating: 5,
-      date: new Date('2025-10-28T20:15:00'),
-      notes: 'Complex and refined with notes of cocoa, espresso, and roasted nuts.',
-      duration: 90,
-      strength: 'Full',
-      hasCalendarEvent: true,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cigars'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      toast({
+        title: "Cigar deleted",
+        description: "The cigar entry has been removed.",
+      });
     },
-    {
-      id: '3',
-      cigarName: 'Arturo Fuente Hemingway',
-      brand: 'Arturo Fuente',
-      rating: 4,
-      date: new Date('2025-10-20T18:00:00'),
-      notes: 'Well-balanced with cedar and cream notes.',
-      duration: 60,
-      strength: 'Medium',
-      hasCalendarEvent: false,
-    },
-    {
-      id: '4',
-      cigarName: 'Cohiba Behike 52',
-      brand: 'Habanos S.A.',
-      rating: 5,
-      date: new Date('2025-10-15T21:00:00'),
-      notes: 'Premium smoke with exceptional complexity and richness.',
-      duration: 80,
-      strength: 'Full',
-      hasCalendarEvent: true,
-    },
-    {
-      id: '5',
-      cigarName: 'Oliva Serie V Melanio',
-      brand: 'Oliva Cigar Co.',
-      rating: 4,
-      date: new Date('2025-10-10T19:45:00'),
-      notes: 'Bold and flavorful with excellent construction.',
-      duration: 70,
-      strength: 'Full',
-      hasCalendarEvent: true,
-    },
-    {
-      id: '6',
-      cigarName: 'Ashton VSG',
-      brand: 'Ashton',
-      rating: 4,
-      date: new Date('2025-10-05T20:30:00'),
-      notes: 'Rich and smooth with a satisfying finish.',
-      duration: 65,
-      strength: 'Medium',
-      hasCalendarEvent: true,
-    },
-  ]);
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete cigar.",
+      });
+    }
+  });
+
+  const filteredEntries = cigars
+    .filter((cigar) => {
+      const matchesSearch = searchQuery === "" || 
+        cigar.cigarName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cigar.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cigar.notes?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesRating = ratingFilter === "all" ||
+        (ratingFilter === "5" && cigar.rating === 5) ||
+        (ratingFilter === "4" && cigar.rating >= 4) ||
+        (ratingFilter === "3" && cigar.rating >= 3);
+      
+      return matchesSearch && matchesRating;
+    })
+    .sort((a, b) => {
+      if (sortBy === "date-desc") return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (sortBy === "date-asc") return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === "rating-desc") return b.rating - a.rating;
+      if (sortBy === "rating-asc") return a.rating - b.rating;
+      return 0;
+    });
+
+  const formattedEntries: CigarEntry[] = filteredEntries.map(cigar => ({
+    id: cigar.id,
+    cigarName: cigar.cigarName,
+    brand: cigar.brand || undefined,
+    rating: cigar.rating,
+    date: new Date(cigar.date),
+    notes: cigar.notes || undefined,
+    duration: cigar.duration || undefined,
+    strength: (cigar.strength as "Mild" | "Medium" | "Full") || undefined,
+    hasCalendarEvent: !!cigar.calendarEventId,
+  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -138,20 +136,30 @@ export default function History() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          {entries.map((entry) => (
-            <CigarEntryCard
-              key={entry.id}
-              entry={entry}
-              onEdit={(id) => console.log('Edit', id)}
-              onDelete={(id) => console.log('Delete', id)}
-            />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-48 bg-card rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4">
+              {formattedEntries.map((entry) => (
+                <CigarEntryCard
+                  key={entry.id}
+                  entry={entry}
+                  onEdit={(id) => console.log('Edit', id)}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                />
+              ))}
+            </div>
 
-        <div className="text-center py-8 text-muted-foreground">
-          Showing {entries.length} of {entries.length} cigars
-        </div>
+            <div className="text-center py-8 text-muted-foreground">
+              Showing {formattedEntries.length} of {cigars.length} cigars
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
