@@ -15,6 +15,9 @@ import { randomUUID } from "crypto";
 export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: { username: string; email: string; password: string }): Promise<User>;
+  authenticateUser(username: string, password: string): Promise<User | null>;
   upsertUser(user: UpsertUser): Promise<User>;
   
   // Cigar methods
@@ -85,16 +88,39 @@ export class MemStorage implements IStorage {
     return this.users.get(id);
   }
 
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(u => u.username === username);
+  }
+
+  async createUser(userData: { username: string; email: string; password: string }): Promise<User> {
+    const id = randomUUID();
+    const user: User = {
+      id,
+      username: userData.username,
+      email: userData.email,
+      password: userData.password, // In production, this should be hashed
+      createdAt: new Date(),
+    };
+    this.users.set(id, user);
+    return user;
+  }
+
+  async authenticateUser(username: string, password: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user || user.password !== password) {
+      return null;
+    }
+    return user;
+  }
+
   async upsertUser(userData: UpsertUser): Promise<User> {
     const existingUser = this.users.get(userData.id);
     const user: User = {
       id: userData.id,
-      email: userData.email ?? null,
-      firstName: userData.firstName ?? null,
-      lastName: userData.lastName ?? null,
-      profileImageUrl: userData.profileImageUrl ?? null,
+      username: userData.username ?? "",
+      email: userData.email ?? "",
+      password: "", // Not used for upsert
       createdAt: existingUser?.createdAt ?? new Date(),
-      updatedAt: new Date(),
     };
     this.users.set(user.id, user);
     return user;
