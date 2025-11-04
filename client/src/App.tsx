@@ -7,8 +7,11 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Dashboard from "@/pages/Dashboard";
 import LogCigar from "@/pages/LogCigar";
 import History from "@/pages/History";
+import Releases from "@/pages/Releases";
+import Events from "@/pages/Events";
+import Community from "@/pages/Community";
 import NotFound from "@/pages/not-found";
-import { Home, Plus, History as HistoryIcon, Calendar } from "lucide-react";
+import { Home, Plus, History as HistoryIcon, Calendar, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function Navigation() {
@@ -16,9 +19,11 @@ function Navigation() {
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: Home },
-    { path: "/log", label: "Log Cigar", icon: Plus },
+    { path: "/log", label: "Log", icon: Plus },
     { path: "/history", label: "History", icon: HistoryIcon },
-    { path: "/calendar", label: "Calendar", icon: Calendar },
+    { path: "/releases", label: "Releases", icon: Sparkles },
+    { path: "/events", label: "Events", icon: Calendar },
+    { path: "/community", label: "Community", icon: Users },
   ];
 
   return (
@@ -37,7 +42,7 @@ function Navigation() {
               </a>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-2">
+            <nav className="hidden lg:flex items-center gap-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location === item.path;
@@ -63,23 +68,16 @@ function Navigation() {
         </div>
       </header>
 
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-around h-16">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="grid grid-cols-6 h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path;
             return (
               <Link key={item.path} href={item.path}>
-                <a className="flex flex-col items-center gap-1 px-4 py-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={isActive ? "bg-secondary" : ""}
-                    data-testid={`nav-mobile-${item.label.toLowerCase().replace(' ', '-')}`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </Button>
-                  <span className={`text-xs ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
+                <a className="flex flex-col items-center justify-center gap-1 h-full">
+                  <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                  <span className={`text-xs ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
                     {item.label}
                   </span>
                 </a>
@@ -98,21 +96,9 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/log" component={LogCigar} />
       <Route path="/history" component={History} />
-      <Route path="/calendar">
-        <div className="min-h-screen bg-background">
-          <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-            <h1 className="text-5xl md:text-6xl font-semibold font-serif mb-2">
-              Calendar View
-            </h1>
-            <p className="text-muted-foreground mb-8">
-              Your cigar sessions synced with Google Calendar
-            </p>
-            <div className="flex items-center justify-center h-64 border border-dashed rounded-lg">
-              <p className="text-muted-foreground">Calendar integration coming soon</p>
-            </div>
-          </div>
-        </div>
-      </Route>
+      <Route path="/releases" component={Releases} />
+      <Route path="/events" component={Events} />
+      <Route path="/community" component={Community} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -122,7 +108,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen pb-16 md:pb-0">
+        <div className="min-h-screen pb-16 lg:pb-0">
           <Navigation />
           <Router />
         </div>
