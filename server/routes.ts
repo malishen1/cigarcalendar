@@ -30,6 +30,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cigars", async (req, res) => {
     try {
       const { addToCalendar, ...cigarData } = req.body;
+      
+      // Convert date string to Date object
+      if (cigarData.date) {
+        cigarData.date = new Date(cigarData.date);
+      }
+      
       const parsed = insertCigarSchema.parse(cigarData);
       
       const cigar = await storage.createCigar(parsed);
