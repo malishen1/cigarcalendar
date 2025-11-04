@@ -4,9 +4,12 @@ import { storage } from "./storage";
 import { insertCigarSchema, insertReleaseSchema, insertEventSchema, insertCommunityPostSchema } from "@shared/schema";
 import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "./calendar";
 import { createEvents } from "ics";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { getSession } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up session middleware first
+  app.use(getSession());
+  
   // Sign up route
   app.post('/api/signup', async (req, res) => {
     try {
