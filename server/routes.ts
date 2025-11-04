@@ -29,8 +29,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/cigars", async (req, res) => {
     try {
-      const parsed = insertCigarSchema.parse(req.body);
-      const addToCalendar = req.body.addToCalendar;
+      const { addToCalendar, ...cigarData } = req.body;
+      const parsed = insertCigarSchema.parse(cigarData);
       
       const cigar = await storage.createCigar(parsed);
       
@@ -49,6 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedCigar = await storage.getCigar(cigar.id);
       res.status(201).json(updatedCigar || cigar);
     } catch (error) {
+      console.error("Error logging cigar:", error);
       res.status(400).json({ error: "Invalid cigar data" });
     }
   });
