@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Cigarette, Calendar, Users, TrendingUp } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
 export default function Landing() {
@@ -40,14 +40,22 @@ export default function Landing() {
     
     setIsLoading(true);
     try {
-      await apiRequest("/api/signup", {
+      const response = await fetch("/api/signup", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           username: signUpData.username,
           email: signUpData.email,
           password: signUpData.password
         })
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Sign up failed");
+      }
       
       toast({
         title: "Account created!",
@@ -72,13 +80,21 @@ export default function Landing() {
     setIsLoading(true);
     
     try {
-      await apiRequest("/api/signin", {
+      const response = await fetch("/api/signin", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           username: signInData.username,
           password: signInData.password
         })
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Sign in failed");
+      }
       
       toast({
         title: "Welcome back!",
