@@ -11,12 +11,16 @@ import History from "@/pages/History";
 import Releases from "@/pages/Releases";
 import Events from "@/pages/Events";
 import Community from "@/pages/Community";
+import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
-import { Home, Plus, History as HistoryIcon, Calendar, Sparkles, Users } from "lucide-react";
+import Footer from "@/components/Footer";
+import { Home, Plus, History as HistoryIcon, Calendar, Sparkles, Users, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 function Navigation() {
   const [location, setLocation] = useLocation();
+  const { user } = useAuth();
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: Home },
@@ -64,7 +68,23 @@ function Navigation() {
               })}
             </nav>
 
-            <ThemeToggle />
+            <div className="flex items-center gap-2">
+              {user && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => {
+                    window.location.href = "/api/logout";
+                  }}
+                  data-testid="button-logout"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Sign Out</span>
+                </Button>
+              )}
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
@@ -94,6 +114,20 @@ function Navigation() {
 }
 
 function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Landing />;
+  }
+
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
@@ -115,6 +149,7 @@ function App() {
         <div className="min-h-screen pb-16 lg:pb-0">
           <Navigation />
           <Router />
+          <Footer />
         </div>
         <Toaster />
       </TooltipProvider>
