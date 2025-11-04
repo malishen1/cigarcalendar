@@ -2,12 +2,16 @@ import StatsCard from "@/components/StatsCard";
 import CigarEntryCard, { type CigarEntry } from "@/components/CigarEntryCard";
 import { Button } from "@/components/ui/button";
 import { Cigarette, Star, Calendar, TrendingUp, Plus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Cigar } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['/api/stats'],
@@ -15,6 +19,27 @@ export default function Dashboard() {
 
   const { data: cigars, isLoading: cigarsLoading } = useQuery<Cigar[]>({
     queryKey: ['/api/cigars'],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest('DELETE', `/api/cigars/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/cigars'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/stats'] });
+      toast({
+        title: "Cigar deleted",
+        description: "The cigar entry has been removed.",
+      });
+    },
+    onError: () => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete cigar.",
+      });
+    }
   });
 
   const recentCigars = cigars?.slice(0, 5) || [];
@@ -107,7 +132,7 @@ export default function Dashboard() {
                 key={entry.id}
                 entry={entry}
                 onEdit={(id) => console.log('Edit', id)}
-                onDelete={(id) => console.log('Delete', id)}
+                onDelete={(id) => deleteMutation.mutate(id)}
               />
             ))}
           </div>
