@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCigarSchema, insertReleaseSchema, insertEventSchema, insertCommunityPostSchema } from "@shared/schema";
-import { createCalendarEvent } from "./calendar";
+import { createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } from "./calendar";
 import { createEvents } from "ics";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -63,24 +63,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/cigars/:id", async (req, res) => {
     try {
-      const updated = await storage.updateCigar(req.params.id, req.body);
+      const { addToCalendar, ...cigarData } = req.body;
+      
+      // Convert date string to Date object if present
+      if (cigarData.date) {
+        cigarData.date = new Date(cigarData.date);
+      }
+      
+      // Get the current cigar to check for calendar event
+      const currentCigar = await storage.getCigar(req.params.id);
+      if (!currentCigar) {
+        return res.status(404).json({ error: "Cigar not found" });
+      }
+      
+      const updated = await storage.updateCigar(req.params.id, cigarData);
       if (!updated) {
         return res.status(404).json({ error: "Cigar not found" });
       }
-      res.json(updated);
+      
+      // Update Google Calendar event if it exists
+      if (currentCigar.calendarEventId) {
+        await updateCalendarEvent(
+          currentCigar.calendarEventId,
+          updated.cigarName,
+          updated.brand,
+          updated.date,
+          updated.duration
+        );
+      }
+      // Or create a new event if user wants to add to calendar
+      else if (addToCalendar) {
+        const eventId = await createCalendarEvent(
+          updated.cigarName,
+          updated.brand,
+          updated.date,
+          updated.duration
+        );
+        if (eventId) {
+          await storage.updateCigar(req.params.id, { calendarEventId: eventId });
+        }
+      }
+      
+      const finalCigar = await storage.getCigar(req.params.id);
+      res.json(finalCigar || updated);
     } catch (error) {
+      console.error("Error updating cigar:", error);
       res.status(400).json({ error: "Failed to update cigar" });
     }
   });
 
   app.delete("/api/cigars/:id", async (req, res) => {
     try {
+      // Get the cigar first to check for calendar event
+      const cigar = await storage.getCigar(req.params.id);
+      if (!cigar) {
+        return res.status(404).json({ error: "Cigar not found" });
+      }
+      
+      // Delete from Google Calendar if event exists
+      if (cigar.calendarEventId) {
+        await deleteCalendarEvent(cigar.calendarEventId);
+      }
+      
       const deleted = await storage.deleteCigar(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Cigar not found" });
       }
       res.status(204).send();
     } catch (error) {
+      console.error("Error deleting cigar:", error);
       res.status(500).json({ error: "Failed to delete cigar" });
     }
   });

@@ -131,7 +131,7 @@ export default function Dashboard() {
               <CigarEntryCard
                 key={entry.id}
                 entry={entry}
-                onEdit={(id) => console.log('Edit', id)}
+                onEdit={(id) => setLocation(`/edit/${id}`)}
                 onDelete={(id) => deleteMutation.mutate(id)}
               />
             ))}

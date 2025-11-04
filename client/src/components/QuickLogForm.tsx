@@ -15,15 +15,34 @@ import StarRating from "./StarRating";
 import { useState } from "react";
 import { Calendar } from "lucide-react";
 
-export default function QuickLogForm({ onSubmit }: { onSubmit?: (data: any) => void }) {
-  const [rating, setRating] = useState(0);
-  const [cigarName, setCigarName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 16));
-  const [duration, setDuration] = useState("");
-  const [strength, setStrength] = useState("");
-  const [notes, setNotes] = useState("");
-  const [addToCalendar, setAddToCalendar] = useState(true);
+interface QuickLogFormProps {
+  onSubmit?: (data: any) => void;
+  defaultValues?: {
+    cigarName?: string;
+    brand?: string;
+    rating?: number;
+    date?: Date;
+    duration?: number;
+    strength?: string;
+    notes?: string;
+    addToCalendar?: boolean;
+  };
+  isEdit?: boolean;
+}
+
+export default function QuickLogForm({ onSubmit, defaultValues, isEdit }: QuickLogFormProps) {
+  const [rating, setRating] = useState(defaultValues?.rating || 0);
+  const [cigarName, setCigarName] = useState(defaultValues?.cigarName || "");
+  const [brand, setBrand] = useState(defaultValues?.brand || "");
+  const [date, setDate] = useState(
+    defaultValues?.date 
+      ? new Date(defaultValues.date).toISOString().slice(0, 16)
+      : new Date().toISOString().slice(0, 16)
+  );
+  const [duration, setDuration] = useState(defaultValues?.duration?.toString() || "");
+  const [strength, setStrength] = useState(defaultValues?.strength || "");
+  const [notes, setNotes] = useState(defaultValues?.notes || "");
+  const [addToCalendar, setAddToCalendar] = useState(defaultValues?.addToCalendar ?? true);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +62,7 @@ export default function QuickLogForm({ onSubmit }: { onSubmit?: (data: any) => v
 
   return (
     <Card className="p-6 max-w-2xl mx-auto">
-      <h2 className="text-3xl font-semibold font-serif mb-6">Log a Cigar</h2>
+      <h2 className="text-3xl font-semibold font-serif mb-6">{isEdit ? "Edit Cigar" : "Log a Cigar"}</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">

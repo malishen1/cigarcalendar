@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import ThemeToggle from "@/components/ThemeToggle";
 import Dashboard from "@/pages/Dashboard";
 import LogCigar from "@/pages/LogCigar";
+import EditCigar from "@/pages/EditCigar";
 import History from "@/pages/History";
 import Releases from "@/pages/Releases";
 import Events from "@/pages/Events";
@@ -97,6 +98,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/log" component={LogCigar} />
+      <Route path="/edit/:id" component={EditCigar} />
       <Route path="/history" component={History} />
       <Route path="/releases" component={Releases} />
       <Route path="/events" component={Events} />
