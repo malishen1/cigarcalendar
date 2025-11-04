@@ -28,9 +28,7 @@ export default function History() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/cigars/${id}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/cigars/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cigars'] });

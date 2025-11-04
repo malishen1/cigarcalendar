@@ -20,10 +20,7 @@ export default function Community() {
 
   const createPostMutation = useMutation({
     mutationFn: async (post: { userName: string; cigarName: string; rating: number; comment?: string }) => {
-      return apiRequest('/api/community', {
-        method: 'POST',
-        body: JSON.stringify(post),
-      });
+      return apiRequest('POST', '/api/community', post);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/community'] });
@@ -44,9 +41,7 @@ export default function Community() {
 
   const likeMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/community/${id}/like`, {
-        method: 'POST',
-      });
+      return apiRequest('POST', `/api/community/${id}/like`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/community'] });
@@ -55,9 +50,7 @@ export default function Community() {
 
   const commentMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/community/${id}/comment`, {
-        method: 'POST',
-      });
+      return apiRequest('POST', `/api/community/${id}/comment`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/community'] });

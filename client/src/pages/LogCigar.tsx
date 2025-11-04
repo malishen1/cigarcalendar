@@ -11,10 +11,7 @@ export default function LogCigar() {
 
   const logCigarMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest('/api/cigars', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', '/api/cigars', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/cigars'] });
