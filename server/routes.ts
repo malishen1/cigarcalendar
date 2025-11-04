@@ -1,13 +1,278 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { insertCigarSchema, insertReleaseSchema, insertEventSchema, insertCommunityPostSchema } from "@shared/schema";
+import { createCalendarEvent } from "./calendar";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // put application routes here
-  // prefix all routes with /api
+  // Cigar routes
+  app.get("/api/cigars", async (req, res) => {
+    try {
+      const cigars = await storage.getAllCigars();
+      res.json(cigars);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cigars" });
+    }
+  });
 
-  // use storage to perform CRUD operations on the storage interface
-  // e.g. storage.insertUser(user) or storage.getUserByUsername(username)
+  app.get("/api/cigars/:id", async (req, res) => {
+    try {
+      const cigar = await storage.getCigar(req.params.id);
+      if (!cigar) {
+        return res.status(404).json({ error: "Cigar not found" });
+      }
+      res.json(cigar);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch cigar" });
+    }
+  });
+
+  app.post("/api/cigars", async (req, res) => {
+    try {
+      const parsed = insertCigarSchema.parse(req.body);
+      const addToCalendar = req.body.addToCalendar;
+      
+      const cigar = await storage.createCigar(parsed);
+      
+      if (addToCalendar) {
+        const eventId = await createCalendarEvent(
+          cigar.cigarName,
+          cigar.brand,
+          cigar.date,
+          cigar.duration
+        );
+        if (eventId) {
+          await storage.updateCigar(cigar.id, { calendarEventId: eventId });
+        }
+      }
+      
+      const updatedCigar = await storage.getCigar(cigar.id);
+      res.status(201).json(updatedCigar || cigar);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid cigar data" });
+    }
+  });
+
+  app.patch("/api/cigars/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateCigar(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Cigar not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update cigar" });
+    }
+  });
+
+  app.delete("/api/cigars/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteCigar(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Cigar not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete cigar" });
+    }
+  });
+
+  // Release routes
+  app.get("/api/releases", async (req, res) => {
+    try {
+      const releases = await storage.getAllReleases();
+      res.json(releases);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch releases" });
+    }
+  });
+
+  app.get("/api/releases/:id", async (req, res) => {
+    try {
+      const release = await storage.getRelease(req.params.id);
+      if (!release) {
+        return res.status(404).json({ error: "Release not found" });
+      }
+      res.json(release);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch release" });
+    }
+  });
+
+  app.post("/api/releases", async (req, res) => {
+    try {
+      const parsed = insertReleaseSchema.parse(req.body);
+      const release = await storage.createRelease(parsed);
+      res.status(201).json(release);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid release data" });
+    }
+  });
+
+  app.patch("/api/releases/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateRelease(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Release not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update release" });
+    }
+  });
+
+  app.delete("/api/releases/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteRelease(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Release not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete release" });
+    }
+  });
+
+  // Event routes
+  app.get("/api/events", async (req, res) => {
+    try {
+      const events = await storage.getAllEvents();
+      res.json(events);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch events" });
+    }
+  });
+
+  app.get("/api/events/:id", async (req, res) => {
+    try {
+      const event = await storage.getEvent(req.params.id);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(event);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch event" });
+    }
+  });
+
+  app.post("/api/events", async (req, res) => {
+    try {
+      const parsed = insertEventSchema.parse(req.body);
+      const event = await storage.createEvent(parsed);
+      res.status(201).json(event);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid event data" });
+    }
+  });
+
+  app.patch("/api/events/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateEvent(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      res.status(400).json({ error: "Failed to update event" });
+    }
+  });
+
+  app.delete("/api/events/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteEvent(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete event" });
+    }
+  });
+
+  // Community post routes
+  app.get("/api/community", async (req, res) => {
+    try {
+      const posts = await storage.getAllCommunityPosts();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch posts" });
+    }
+  });
+
+  app.get("/api/community/:id", async (req, res) => {
+    try {
+      const post = await storage.getCommunityPost(req.params.id);
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch post" });
+    }
+  });
+
+  app.post("/api/community", async (req, res) => {
+    try {
+      const parsed = insertCommunityPostSchema.parse(req.body);
+      const post = await storage.createCommunityPost(parsed);
+      res.status(201).json(post);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid post data" });
+    }
+  });
+
+  app.post("/api/community/:id/like", async (req, res) => {
+    try {
+      const post = await storage.likeCommunityPost(req.params.id);
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to like post" });
+    }
+  });
+
+  app.post("/api/community/:id/comment", async (req, res) => {
+    try {
+      const post = await storage.commentOnCommunityPost(req.params.id);
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to comment on post" });
+    }
+  });
+
+  // Stats endpoint for dashboard
+  app.get("/api/stats", async (req, res) => {
+    try {
+      const cigars = await storage.getAllCigars();
+      const totalCigars = cigars.length;
+      const avgRating = cigars.length > 0 
+        ? (cigars.reduce((sum, c) => sum + c.rating, 0) / cigars.length).toFixed(1)
+        : "0";
+      
+      const now = new Date();
+      const thisMonth = cigars.filter(c => {
+        const cigarDate = new Date(c.date);
+        return cigarDate.getMonth() === now.getMonth() && 
+               cigarDate.getFullYear() === now.getFullYear();
+      }).length;
+      
+      const withCalendar = cigars.filter(c => c.calendarEventId).length;
+      
+      res.json({
+        totalCigars,
+        avgRating,
+        thisMonth,
+        withCalendar
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch stats" });
+    }
+  });
 
   const httpServer = createServer(app);
 
