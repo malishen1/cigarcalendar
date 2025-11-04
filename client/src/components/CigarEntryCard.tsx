@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import StarRating from "./StarRating";
-import { Calendar, Clock, Edit, Trash2 } from "lucide-react";
+import { Calendar, Clock, Edit, Trash2, Download } from "lucide-react";
 import { format } from "date-fns";
 import tobaccoTexture from '@assets/generated_images/Premium_tobacco_leaf_texture_271d7cbc.png';
 
@@ -55,6 +55,17 @@ export default function CigarEntryCard({ entry, onEdit, onDelete }: CigarEntryCa
             </div>
             
             <div className="flex gap-2">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => {
+                  window.location.href = `/api/cigars/${entry.id}/download-calendar`;
+                }}
+                title="Download calendar file for iOS Calendar, Google Calendar, Outlook, etc."
+                data-testid={`button-download-calendar-${entry.id}`}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
               {onEdit && (
                 <Button
                   size="icon"

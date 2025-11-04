@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertCigarSchema, insertReleaseSchema, insertEventSchema, insertCommunityPostSchema } from "@shared/schema";
 import { createCalendarEvent } from "./calendar";
+import { createEvents } from "ics";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Cigar routes
@@ -81,6 +82,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete cigar" });
+    }
+  });
+
+  app.get("/api/cigars/:id/download-calendar", async (req, res) => {
+    try {
+      const cigar = await storage.getCigar(req.params.id);
+      if (!cigar) {
+        return res.status(404).json({ error: "Cigar not found" });
+      }
+
+      const title = cigar.brand ? `${cigar.cigarName} by ${cigar.brand}` : cigar.cigarName;
+      const startDate = new Date(cigar.date);
+      const endDate = new Date(cigar.date);
+      endDate.setMinutes(endDate.getMinutes() + (cigar.duration || 60));
+
+      const event = {
+        start: [startDate.getFullYear(), startDate.getMonth() + 1, startDate.getDate(), startDate.getHours(), startDate.getMinutes()],
+        end: [endDate.getFullYear(), endDate.getMonth() + 1, endDate.getDate(), endDate.getHours(), endDate.getMinutes()],
+        title: `Cigar Session: ${title}`,
+        description: cigar.notes ? `Enjoyed ${title}\n\nRating: ${cigar.rating}/5 stars\n\nNotes: ${cigar.notes}` : `Enjoyed ${title}\n\nRating: ${cigar.rating}/5 stars`,
+        status: 'CONFIRMED' as const,
+        busyStatus: 'FREE' as const,
+      };
+
+      const { error, value } = createEvents([event]);
+      
+      if (error) {
+        console.error("Error creating calendar event:", error);
+        return res.status(500).json({ error: "Failed to create calendar file" });
+      }
+
+      res.setHeader('Content-Type', 'text/calendar');
+      res.setHeader('Content-Disposition', `attachment; filename="cigar-session-${cigar.id}.ics"`);
+      res.send(value);
+    } catch (error) {
+      console.error("Error downloading calendar:", error);
+      res.status(500).json({ error: "Failed to download calendar event" });
     }
   });
 
