@@ -54,7 +54,9 @@ export default function EventCard({ event }: EventCardProps) {
     }
   });
 
-  const isAtCapacity = event.maxCapacity && event.attendees ? event.attendees >= event.maxCapacity : false;
+  const isAtCapacity = event.maxCapacity !== undefined && event.maxCapacity !== null
+    ? (event.attendees ?? 0) >= event.maxCapacity
+    : false;
 
   return (
     <Card className="p-6 hover-elevate transition-all">

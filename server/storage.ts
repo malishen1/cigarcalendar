@@ -60,6 +60,24 @@ export class MemStorage implements IStorage {
     this.releases = new Map();
     this.events = new Map();
     this.communityPosts = new Map();
+    
+    // Seed initial events
+    this.seedEvents();
+  }
+
+  private seedEvents() {
+    const christmasEvent: Event = {
+      id: randomUUID(),
+      name: "Christmas Celebration",
+      date: new Date("2025-12-31T19:00:00.000Z"),
+      location: "Emory Cigar Lounge",
+      type: "Tasting",
+      description: "Join us for a special Christmas celebration at Emory Cigar Lounge! Ring in the new year with premium cigars and great company.",
+      attendees: 0,
+      maxCapacity: 24,
+      link: null
+    };
+    this.events.set(christmasEvent.id, christmasEvent);
   }
 
   // User methods
@@ -192,15 +210,26 @@ export class MemStorage implements IStorage {
     const event = this.events.get(id);
     if (!event) return null;
     
-    // Check if event is at max capacity
-    if (event.maxCapacity && event.attendees !== null && event.attendees >= event.maxCapacity) {
-      return null;
+    // Check if event is at max capacity (explicit null check)
+    if (event.maxCapacity !== null && event.maxCapacity !== undefined) {
+      const currentAttendees = event.attendees ?? 0;
+      if (currentAttendees >= event.maxCapacity) {
+        return null;
+      }
     }
     
     const updated = { 
       ...event, 
       attendees: (event.attendees ?? 0) + 1 
     };
+    
+    // Revalidate after increment to catch some race conditions
+    if (updated.maxCapacity !== null && updated.maxCapacity !== undefined) {
+      if (updated.attendees > updated.maxCapacity) {
+        return null;
+      }
+    }
+    
     this.events.set(id, updated);
     return updated;
   }
