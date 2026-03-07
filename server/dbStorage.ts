@@ -1,5 +1,5 @@
-import { 
-  type User, 
+import {
+  type User,
   type UpsertUser,
   type Cigar,
   type InsertCigar,
@@ -13,16 +13,138 @@ import {
   cigars,
   releases,
   events,
-  communityPosts
+  communityPosts,
 } from "@shared/schema";
 import { db } from "../db/index";
 import { eq, desc, sql } from "drizzle-orm";
 import type { IStorage } from "./storage";
 
 export class DbStorage implements IStorage {
-  // User methods
+  constructor() {
+    this.seedIfEmpty();
+  }
+
+  private async seedIfEmpty() {
+    try {
+      const existingReleases = await db.select().from(releases).limit(1);
+      if (existingReleases.length === 0) {
+        await db.insert(releases).values([
+          {
+            name: "Cohiba Behike BHK 52",
+            brand: "Cohiba",
+            releaseDate: new Date("2026-04-15"),
+            region: "UK & Europe",
+            availability: "Limited",
+            description:
+              "The ultra-premium Behike line returns with a limited UK & Europe allocation.",
+          },
+          {
+            name: "Montecristo No. 2 Edición Limitada",
+            brand: "Montecristo",
+            releaseDate: new Date("2026-05-01"),
+            region: "UK & Europe",
+            availability: "Limited",
+            description:
+              "A special limited edition aged for an extra 18 months for added complexity.",
+          },
+          {
+            name: "Romeo y Julieta Wide Churchills",
+            brand: "Romeo y Julieta",
+            releaseDate: new Date("2026-03-20"),
+            region: "UK",
+            availability: "Available",
+            description:
+              "A wider ring gauge take on the classic Churchill format. Rich and creamy.",
+          },
+          {
+            name: "Partagás Serie D No. 5",
+            brand: "Partagás",
+            releaseDate: new Date("2026-06-10"),
+            region: "Europe",
+            availability: "Upcoming",
+            description: "Full-bodied with dark chocolate and earth notes.",
+          },
+          {
+            name: "H. Upmann Magnum 56 Edición Limitada",
+            brand: "H. Upmann",
+            releaseDate: new Date("2026-07-01"),
+            region: "UK & Europe",
+            availability: "Upcoming",
+            description:
+              "Cedar, leather and toasted nuts from H. Upmann's limited edition programme.",
+          },
+          {
+            name: "Bolivar Royal Coronas",
+            brand: "Bolivar",
+            releaseDate: new Date("2026-03-10"),
+            region: "UK",
+            availability: "Available",
+            description:
+              "Dark, powerful and complex in a refined robusto format.",
+          },
+        ]);
+      }
+
+      const existingEvents = await db.select().from(events).limit(1);
+      if (existingEvents.length === 0) {
+        await db.insert(events).values([
+          {
+            name: "London Cigar Tasting Evening",
+            date: new Date("2026-04-18T19:00:00"),
+            location: "Davidoff of London, St James's",
+            type: "Tasting",
+            description:
+              "An exclusive evening of premium Cuban cigars paired with aged rum.",
+            attendees: 12,
+            maxCapacity: 30,
+            link: "https://davidoff.com",
+          },
+          {
+            name: "Manchester Cigar Social",
+            date: new Date("2026-05-03T18:30:00"),
+            location: "The Smoking Room, Manchester",
+            type: "Social",
+            description:
+              "Monthly meetup for cigar enthusiasts in the North West.",
+            attendees: 8,
+            maxCapacity: 20,
+            link: null,
+          },
+          {
+            name: "European Cigar Festival 2026",
+            date: new Date("2026-06-20T10:00:00"),
+            location: "Amsterdam, Netherlands",
+            type: "Festival",
+            description:
+              "The premier cigar festival in Europe. 50+ brands and exclusive releases.",
+            attendees: 320,
+            maxCapacity: 500,
+            link: null,
+          },
+          {
+            name: "Habanos Virtual Lounge",
+            date: new Date("2026-04-05T20:00:00"),
+            location: "Online",
+            type: "Virtual",
+            description:
+              "Join master rollers and brand ambassadors for a live online session.",
+            attendees: 45,
+            maxCapacity: 200,
+            link: null,
+          },
+        ]);
+      }
+    } catch (e) {
+      console.error("Seed error:", e);
+    }
+  }
+
   async getUser(id: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, id))
+      .limit(1);
     return result[0];
   }
 
@@ -31,38 +153,65 @@ export class DbStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username))
+      .limit(1);
     return result[0];
   }
 
-  async createUser(userData: { username: string; email: string; password: string }): Promise<User> {
-    const result = await db.insert(users).values({
-      username: userData.username,
-      email: userData.email,
-      password: userData.password,
-    }).returning();
+  async createUser(userData: {
+    username: string;
+    email: string;
+    password: string;
+  }): Promise<User> {
+    const result = await db
+      .insert(users)
+      .values({
+        username: userData.username,
+        email: userData.email,
+        password: userData.password,
+      })
+      .returning();
     return result[0];
   }
 
-  async authenticateUser(username: string, password: string): Promise<User | null> {
+  async authenticateUser(
+    username: string,
+    password: string,
+  ): Promise<User | null> {
     const user = await this.getUserByUsername(username);
-    if (!user || user.password !== password) {
-      return null;
-    }
+    if (!user || user.password !== password) return null;
     return user;
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const result = await db.insert(users).values(userData).onConflictDoUpdate({
-      target: users.id,
-      set: userData
-    }).returning();
+    const result = await db
+      .insert(users)
+      .values({
+        id: userData.id,
+        username: userData.username ?? "",
+        email: userData.email ?? "",
+        password: "",
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          username: userData.username ?? "",
+          email: userData.email ?? "",
+        },
+      })
+      .returning();
     return result[0];
   }
 
-  // Cigar methods
   async getCigar(id: string): Promise<Cigar | undefined> {
-    const result = await db.select().from(cigars).where(eq(cigars.id, id)).limit(1);
+    const result = await db
+      .select()
+      .from(cigars)
+      .where(eq(cigars.id, id))
+      .limit(1);
     return result[0];
   }
 
@@ -75,8 +224,15 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async updateCigar(id: string, updates: Partial<Cigar>): Promise<Cigar | undefined> {
-    const result = await db.update(cigars).set(updates).where(eq(cigars.id, id)).returning();
+  async updateCigar(
+    id: string,
+    updates: Partial<Cigar>,
+  ): Promise<Cigar | undefined> {
+    const result = await db
+      .update(cigars)
+      .set(updates)
+      .where(eq(cigars.id, id))
+      .returning();
     return result[0];
   }
 
@@ -85,9 +241,12 @@ export class DbStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  // Release methods
   async getRelease(id: string): Promise<Release | undefined> {
-    const result = await db.select().from(releases).where(eq(releases.id, id)).limit(1);
+    const result = await db
+      .select()
+      .from(releases)
+      .where(eq(releases.id, id))
+      .limit(1);
     return result[0];
   }
 
@@ -100,8 +259,15 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async updateRelease(id: string, updates: Partial<Release>): Promise<Release | undefined> {
-    const result = await db.update(releases).set(updates).where(eq(releases.id, id)).returning();
+  async updateRelease(
+    id: string,
+    updates: Partial<Release>,
+  ): Promise<Release | undefined> {
+    const result = await db
+      .update(releases)
+      .set(updates)
+      .where(eq(releases.id, id))
+      .returning();
     return result[0];
   }
 
@@ -110,9 +276,12 @@ export class DbStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  // Event methods
   async getEvent(id: string): Promise<Event | undefined> {
-    const result = await db.select().from(events).where(eq(events.id, id)).limit(1);
+    const result = await db
+      .select()
+      .from(events)
+      .where(eq(events.id, id))
+      .limit(1);
     return result[0];
   }
 
@@ -128,23 +297,28 @@ export class DbStorage implements IStorage {
   async rsvpEvent(id: string): Promise<Event | null> {
     const event = await this.getEvent(id);
     if (!event) return null;
-
-    if (event.maxCapacity !== null && event.maxCapacity !== undefined) {
-      if ((event.attendees ?? 0) >= event.maxCapacity) {
-        return null;
-      }
-    }
-
-    const result = await db.update(events)
+    if (
+      event.maxCapacity !== null &&
+      (event.attendees ?? 0) >= event.maxCapacity
+    )
+      return null;
+    const result = await db
+      .update(events)
       .set({ attendees: sql`${events.attendees} + 1` })
       .where(eq(events.id, id))
       .returning();
-    
     return result[0] || null;
   }
 
-  async updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined> {
-    const result = await db.update(events).set(updates).where(eq(events.id, id)).returning();
+  async updateEvent(
+    id: string,
+    updates: Partial<Event>,
+  ): Promise<Event | undefined> {
+    const result = await db
+      .update(events)
+      .set(updates)
+      .where(eq(events.id, id))
+      .returning();
     return result[0];
   }
 
@@ -153,23 +327,35 @@ export class DbStorage implements IStorage {
     return result.rowCount ? result.rowCount > 0 : false;
   }
 
-  // Community post methods
   async getCommunityPost(id: string): Promise<CommunityPost | undefined> {
-    const result = await db.select().from(communityPosts).where(eq(communityPosts.id, id)).limit(1);
+    const result = await db
+      .select()
+      .from(communityPosts)
+      .where(eq(communityPosts.id, id))
+      .limit(1);
     return result[0];
   }
 
   async getAllCommunityPosts(): Promise<CommunityPost[]> {
-    return db.select().from(communityPosts).orderBy(desc(communityPosts.timestamp));
+    return db
+      .select()
+      .from(communityPosts)
+      .orderBy(desc(communityPosts.timestamp));
   }
 
-  async createCommunityPost(insertPost: InsertCommunityPost): Promise<CommunityPost> {
-    const result = await db.insert(communityPosts).values(insertPost).returning();
+  async createCommunityPost(
+    insertPost: InsertCommunityPost,
+  ): Promise<CommunityPost> {
+    const result = await db
+      .insert(communityPosts)
+      .values(insertPost)
+      .returning();
     return result[0];
   }
 
   async likeCommunityPost(id: string): Promise<CommunityPost | undefined> {
-    const result = await db.update(communityPosts)
+    const result = await db
+      .update(communityPosts)
       .set({ likes: sql`${communityPosts.likes} + 1` })
       .where(eq(communityPosts.id, id))
       .returning();
@@ -177,7 +363,8 @@ export class DbStorage implements IStorage {
   }
 
   async commentOnCommunityPost(id: string): Promise<CommunityPost | undefined> {
-    const result = await db.update(communityPosts)
+    const result = await db
+      .update(communityPosts)
       .set({ comments: sql`${communityPosts.comments} + 1` })
       .where(eq(communityPosts.id, id))
       .returning();
