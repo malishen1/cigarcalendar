@@ -11,7 +11,6 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Session storage table - required for Replit Auth
 export const sessions = pgTable(
   "sessions",
   {
@@ -22,14 +21,13 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
-// User storage table - custom authentication
 export const users = pgTable("users", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
   username: varchar("username").notNull().unique(),
   email: varchar("email").notNull(),
-  password: varchar("password").notNull(), // Hashed password
+  password: varchar("password").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -106,7 +104,6 @@ export const postComments = pgTable("post_comments", {
     .default(sql`now()`),
 });
 
-// Zod schemas for insertions
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -139,21 +136,22 @@ export const insertEventSchema = createInsertSchema(events)
     date: z.coerce.date(),
   });
 
-export const insertCommunityPostSchema = createInsertSchema(
-  communityPosts,
-).omit({
-  id: true,
-  timestamp: true,
-  likes: true,
-  comments: true,
-});
+export const insertCommunityPostSchema = createInsertSchema(communityPosts)
+  .omit({
+    id: true,
+    timestamp: true,
+    likes: true,
+    comments: true,
+  })
+  .extend({
+    imageUrl: z.string().optional(),
+  });
 
 export const insertPostCommentSchema = createInsertSchema(postComments).omit({
   id: true,
   timestamp: true,
 });
 
-// Types
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 
