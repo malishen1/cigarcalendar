@@ -1,20 +1,9 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import StarRating from "./StarRating";
-import { MessageCircle, ThumbsUp } from "lucide-react";
+import { Heart, MessageCircle, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 export interface CommunityPost {
@@ -28,138 +17,144 @@ export interface CommunityPost {
   timestamp: Date;
   likes: number;
   comments: number;
+  imageUrl?: string;
 }
 
 interface CommunityPostProps {
   post: CommunityPost;
   onLike?: (id: string) => void;
-  onComment?: (id: string) => void;
+  onComment?: (id: string, text: string) => void;
 }
 
-export default function CommunityPost({ post, onLike, onComment }: CommunityPostProps) {
+export default function CommunityPost({
+  post,
+  onLike,
+  onComment,
+}: CommunityPostProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
+  const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  const initials = post.userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
 
   const handleLike = () => {
     setIsLiked(!isLiked);
     setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
-    if (onLike) {
-      onLike(post.id);
-    }
-    console.log(`${isLiked ? 'Unliked' : 'Liked'} post: ${post.id}`);
+    if (onLike) onLike(post.id);
   };
 
-  const handleCommentSubmit = () => {
+  const handleComment = () => {
     if (!commentText.trim()) return;
-    
-    // Call the comment handler to persist the comment
-    if (onComment) {
-      onComment(post.id);
-    }
-    
-    // Show success feedback
-    toast({
-      title: "Comment posted",
-      description: commentText,
-    });
-    
-    // Reset form
+    if (onComment) onComment(post.id, commentText);
+    toast({ title: "Comment posted!" });
     setCommentText("");
-    setIsDialogOpen(false);
   };
-
-  const initials = post.userName.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
-    <Card className="p-6">
-      <div className="flex gap-4">
-        <Avatar>
-          <AvatarImage src={post.userAvatar} />
-          <AvatarFallback>{initials}</AvatarFallback>
-        </Avatar>
-
+    <Card className="overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-3 p-4">
+        <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary to-amber-300">
+          <Avatar className="w-9 h-9 border-2 border-background">
+            <AvatarImage src={post.userAvatar} />
+            <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+          </Avatar>
+        </div>
         <div className="flex-1">
-          <div className="mb-2">
-            <p className="font-medium">{post.userName}</p>
-            <p className="text-sm text-muted-foreground">
-              {formatDistanceToNow(post.timestamp, { addSuffix: true })}
-            </p>
-          </div>
+          <p className="font-medium text-sm">{post.userName}</p>
+          <p className="text-xs text-muted-foreground">
+            {formatDistanceToNow(post.timestamp, { addSuffix: true })}
+          </p>
+        </div>
+        {post.cigarName && post.cigarName !== "Custom Cigar" && (
+          <span className="text-xs bg-muted px-3 py-1 rounded-full font-medium">
+            🔥 {post.cigarName}
+          </span>
+        )}
+      </div>
 
-          <div className="mb-3">
-            <p className="text-foreground mb-1">
-              <span className="font-medium">Currently smoking:</span>{' '}
-              <span className="font-serif">{post.cigarName}</span>
-              {post.brand && <span className="text-muted-foreground"> by {post.brand}</span>}
-            </p>
-            <StarRating value={post.rating} readonly size="sm" />
-          </div>
+      {/* Photo */}
+      {post.imageUrl && (
+        <div className="w-full aspect-square overflow-hidden bg-muted">
+          <img
+            src={post.imageUrl}
+            alt="Post"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
 
-          {post.comment && (
-            <p className="text-sm text-foreground mb-4">{post.comment}</p>
-          )}
+      {/* Actions */}
+      <div className="px-4 pt-3 pb-1 flex items-center gap-4">
+        <button
+          onClick={handleLike}
+          className={`flex items-center gap-1.5 transition-colors ${isLiked ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Heart className={`w-5 h-5 ${isLiked ? "fill-red-500" : ""}`} />
+          <span className="text-sm">{likeCount}</span>
+        </button>
+        <button
+          onClick={() => setShowComments((v) => !v)}
+          className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <MessageCircle className="w-5 h-5" />
+          <span className="text-sm">{post.comments}</span>
+        </button>
+      </div>
 
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`gap-2 ${isLiked ? 'text-primary' : ''}`}
-              onClick={handleLike}
-              data-testid={`button-like-${post.id}`}
+      {/* Caption */}
+      {post.comment && (
+        <p className="px-4 pb-3 text-sm">
+          <span className="font-medium mr-1">
+            {post.userName.split(" ")[0]}
+          </span>
+          {post.comment}
+        </p>
+      )}
+
+      {/* Stars */}
+      {post.rating > 0 && (
+        <div className="px-4 pb-3 flex gap-0.5">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <span
+              key={i}
+              className={`text-sm ${i <= post.rating ? "text-primary" : "text-muted-foreground"}`}
             >
-              <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-primary' : ''}`} />
-              {likeCount}
-            </Button>
+              ★
+            </span>
+          ))}
+        </div>
+      )}
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2"
-                  data-testid={`button-comment-${post.id}`}
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  {post.comments}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add a Comment</DialogTitle>
-                  <DialogDescription>
-                    Share your thoughts about {post.userName}'s post
-                  </DialogDescription>
-                </DialogHeader>
-                <Textarea
-                  placeholder="Write your comment..."
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  className="min-h-24"
-                  data-testid={`input-comment-${post.id}`}
-                />
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCommentSubmit}
-                    disabled={!commentText.trim()}
-                    data-testid={`button-submit-comment-${post.id}`}
-                  >
-                    Post Comment
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+      {/* Comments section */}
+      {showComments && (
+        <div className="px-4 pb-4 border-t border-border pt-3 space-y-2">
+          <div className="flex gap-2">
+            <input
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Add a comment..."
+              className="flex-1 bg-transparent text-sm border-b border-border outline-none pb-1 placeholder:text-muted-foreground"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleComment();
+              }}
+            />
+            <button
+              onClick={handleComment}
+              disabled={!commentText.trim()}
+              className="text-primary disabled:opacity-30"
+            >
+              <Send className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </div>
+      )}
     </Card>
   );
 }
