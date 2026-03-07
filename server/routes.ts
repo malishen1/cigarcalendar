@@ -517,12 +517,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Seed releases if empty
   app.get("/api/seed", async (req, res) => {
-  ```
+    ```
 
   **Ctrl+S** to save, then just visit this in your browser:
-  ```
-  https://cigarcalendar.app/api/seed
-    try {
+  ```;
+    //cigarcalendar.app/api/seed
+    https: try {
       const existing = await storage.getAllReleases();
       if (existing.length === 0) {
         const seedReleases = [
