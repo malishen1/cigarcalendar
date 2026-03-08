@@ -352,6 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/community", async (req, res) => {
     try {
+      console.log('POST /api/community body:', req.body);
       const parsed = insertCommunityPostSchema.parse(req.body);
       res.status(201).json(await storage.createCommunityPost(parsed));
     } catch (error) {
