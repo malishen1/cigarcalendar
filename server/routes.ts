@@ -354,9 +354,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('POST /api/community body:', req.body);
       const parsed = insertCommunityPostSchema.parse(req.body);
-      res.status(201).json(await storage.createCommunityPost(parsed));
+      const created = await storage.createCommunityPost(parsed);
+      console.log('Created community post:', created);
+      res.status(201).json(created);
     } catch (error) {
-      res.status(400).json({ error: "Invalid post data" });
+      console.error("Community post error:", error);
+      if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: "Invalid post data" });
+      }
     }
   });
 
