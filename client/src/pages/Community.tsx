@@ -110,16 +110,14 @@ export default function Community() {
 
   const handlePost = () => {
     if (!newPost.trim() && !photo) return;
-    const postData: any = {
-      userName: user?.username || "Anonymous",
+    if (!user) return toast({ variant: "destructive", title: "Sign in to post" }) as any;
+    createPostMutation.mutate({
+      userName: user.username,
       cigarName: "Custom Cigar",
       rating: 0,
-      comment: newPost,
-    };
-    if (photo) {
-      postData.imageUrl = photo;
-    }
-    createPostMutation.mutate(postData);
+      comment: newPost || null,
+      imageUrl: photo || null,
+    });
   };
 
   const formattedPosts: CommunityPostType[] = (posts as any[]).map((post) => ({
