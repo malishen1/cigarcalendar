@@ -2,36 +2,23 @@ import StatsCard from "@/components/StatsCard";
 import CigarEntryCard, { type CigarEntry } from "@/components/CigarEntryCard";
 import { Button } from "@/components/ui/button";
 import { Cigarette, Star, Calendar, TrendingUp, Plus } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import type { Cigar } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
+  
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["/api/stats"],
-  });
-  const { data: cigars, isLoading: cigarsLoading } = useQuery<Cigar[]>({
-    queryKey: ["/api/cigars"],
+    queryKey: ['/api/stats'],
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => apiRequest("DELETE", `/api/cigars/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cigars"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
-      toast({ title: "Entry removed" });
-    },
-    onError: () => toast({ variant: "destructive", title: "Failed to delete" }),
+  const { data: cigars, isLoading: cigarsLoading } = useQuery<Cigar[]>({
+    queryKey: ['/api/cigars'],
   });
 
   const recentCigars = cigars?.slice(0, 5) || [];
-  const formattedEntries: CigarEntry[] = recentCigars.map((cigar) => ({
+  const formattedEntries: CigarEntry[] = recentCigars.map(cigar => ({
     id: cigar.id,
     cigarName: cigar.cigarName,
     brand: cigar.brand || undefined,
@@ -45,86 +32,72 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-6 md:px-8 py-12">
-        <div className="flex items-end justify-between mb-12 border-b border-border pb-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+        <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground font-light mb-3">
-              Your Collection
-            </p>
-            <h1 className="text-5xl md:text-6xl font-serif font-light tracking-wide">
-              The Humidor
+            <h1 className="text-5xl md:text-6xl font-semibold font-serif mb-2">
+              Your Humidor
             </h1>
+            <p className="text-muted-foreground">
+              Track and savor every moment
+            </p>
           </div>
-          <Button
+          <Button 
             onClick={() => setLocation("/log")}
-            className="rounded-none text-xs uppercase tracking-widest font-light h-10 px-6 gap-2"
+            size="lg" 
+            className="gap-2" 
             data-testid="button-quick-log"
           >
-            <Plus className="w-3.5 h-3.5" />
-            Log
+            <Plus className="w-5 h-5" />
+            Quick Log
           </Button>
         </div>
 
         {statsLoading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border mb-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-28 bg-background animate-pulse" />
+              <div key={i} className="h-32 bg-card rounded-lg animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border mb-12">
-            {[
-              {
-                title: "Total Logged",
-                value: stats?.totalCigars || 0,
-                icon: Cigarette,
-                sub: "All time",
-              },
-              {
-                title: "Avg Rating",
-                value: stats?.avgRating || "0",
-                icon: Star,
-                sub: "Out of 5",
-              },
-              {
-                title: "This Month",
-                value: stats?.thisMonth || 0,
-                icon: TrendingUp,
-                sub: new Date().toLocaleDateString("en-GB", { month: "long" }),
-              },
-              {
-                title: "Calendared",
-                value: stats?.withCalendar || 0,
-                icon: Calendar,
-                sub: "Synced",
-              },
-            ].map((s) => (
-              <div key={s.title} className="bg-background p-6">
-                <p className="text-xs uppercase tracking-widest text-muted-foreground font-light mb-3">
-                  {s.title}
-                </p>
-                <p className="text-4xl font-serif font-light mb-1">{s.value}</p>
-                <p className="text-xs text-muted-foreground font-light">
-                  {s.sub}
-                </p>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+            <StatsCard
+              title="Total Logged"
+              value={stats?.totalCigars || 0}
+              icon={Cigarette}
+              subtitle="All time"
+            />
+            <StatsCard
+              title="Average Rating"
+              value={stats?.avgRating || "0"}
+              icon={Star}
+              subtitle="Out of 5 stars"
+            />
+            <StatsCard
+              title="This Month"
+              value={stats?.thisMonth || 0}
+              icon={TrendingUp}
+              subtitle={new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            />
+            <StatsCard
+              title="Calendar Events"
+              value={stats?.withCalendar || 0}
+              icon={Calendar}
+              subtitle="Synced to Google"
+            />
           </div>
         )}
 
-        <div className="mb-8">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground font-light mb-1">
-            Recent
-          </p>
-          <h2 className="text-3xl font-serif font-light tracking-wide">
-            Sessions
+        <div className="mb-6">
+          <h2 className="text-3xl md:text-4xl font-semibold font-serif mb-4">
+            Recent Sessions
           </h2>
         </div>
 
         {cigarsLoading ? (
-          <div className="space-y-px bg-border">
+          <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-background animate-pulse" />
+              <div key={i} className="h-48 bg-card rounded-lg animate-pulse" />
             ))}
           </div>
         ) : formattedEntries.length > 0 ? (
@@ -133,22 +106,25 @@ export default function Dashboard() {
               <CigarEntryCard
                 key={entry.id}
                 entry={entry}
-                onEdit={(id) => setLocation(`/edit/${id}`)}
-                onDelete={(id) => deleteMutation.mutate(id)}
+                onEdit={(id) => console.log('Edit', id)}
+                onDelete={(id) => console.log('Delete', id)}
               />
             ))}
           </div>
         ) : (
-          <div className="text-center py-24 border border-border">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground font-light mb-6">
-              Nothing logged yet
+          <div className="text-center py-16">
+            <Cigarette className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-medium mb-2">No cigars logged yet</h3>
+            <p className="text-muted-foreground mb-6">
+              Start tracking your cigar journey today
             </p>
             <Button
               onClick={() => setLocation("/log")}
-              className="rounded-none text-xs uppercase tracking-widest font-light h-10 px-8 gap-2"
+              size="lg"
+              className="gap-2"
               data-testid="button-log-first"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-5 h-5" />
               Log Your First Cigar
             </Button>
           </div>

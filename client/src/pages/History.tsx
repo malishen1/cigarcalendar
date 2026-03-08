@@ -13,7 +13,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useLocation } from "wouter";
 import type { Cigar } from "@shared/schema";
 
 export default function History() {
@@ -22,7 +21,6 @@ export default function History() {
   const [sortBy, setSortBy] = useState("date-desc");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
 
   const { data: cigars = [], isLoading } = useQuery<Cigar[]>({
     queryKey: ['/api/cigars'],
@@ -149,7 +147,7 @@ export default function History() {
                 <CigarEntryCard
                   key={entry.id}
                   entry={entry}
-                  onEdit={(id) => setLocation(`/edit/${id}`)}
+                  onEdit={(id) => console.log('Edit', id)}
                   onDelete={(id) => deleteMutation.mutate(id)}
                 />
               ))}

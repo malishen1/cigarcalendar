@@ -1,40 +1,16 @@
 import { sql } from "drizzle-orm";
-import {
-  pgTable,
-  text,
-  varchar,
-  integer,
-  timestamp,
-  index,
-  jsonb,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const sessions = pgTable(
-  "sessions",
-  {
-    sid: varchar("sid").primaryKey(),
-    sess: jsonb("sess").notNull(),
-    expire: timestamp("expire").notNull(),
-  },
-  (table) => [index("IDX_session_expire").on(table.expire)],
-);
-
 export const users = pgTable("users", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  username: varchar("username").notNull().unique(),
-  email: varchar("email").notNull(),
-  password: varchar("password").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
 });
 
 export const cigars = pgTable("cigars", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   cigarName: text("cigar_name").notNull(),
   brand: text("brand"),
   rating: integer("rating").notNull(),
@@ -46,9 +22,7 @@ export const cigars = pgTable("cigars", {
 });
 
 export const releases = pgTable("releases", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   brand: text("brand").notNull(),
   releaseDate: timestamp("release_date").notNull(),
@@ -58,100 +32,67 @@ export const releases = pgTable("releases", {
 });
 
 export const events = pgTable("events", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   date: timestamp("date").notNull(),
   location: text("location").notNull(),
   type: text("type").notNull(),
   description: text("description"),
-  attendees: integer("attendees").default(0),
-  maxCapacity: integer("max_capacity"),
+  attendees: integer("attendees"),
   link: text("link"),
 });
 
 export const communityPosts = pgTable("community_posts", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userName: text("user_name").notNull(),
   userAvatar: text("user_avatar"),
   cigarName: text("cigar_name").notNull(),
   brand: text("brand"),
   rating: integer("rating").notNull(),
   comment: text("comment"),
-  timestamp: timestamp("timestamp")
-    .notNull()
-    .default(sql`now()`),
+  timestamp: timestamp("timestamp").notNull().default(sql`now()`),
   likes: integer("likes").notNull().default(0),
   comments: integer("comments").notNull().default(0),
-  imageUrl: text("image_url"),
 });
 
-export const postLikes = pgTable("post_likes", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  postId: varchar("post_id")
-    .notNull()
-    .references(() => communityPosts.id),
-  userId: varchar("user_id")
-    .notNull()
-    .references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow(),
+// Zod schemas for insertions
+export const insertUserSchema = createInsertSchema(users).pick({
+  username: true,
+  password: true,
 });
 
-export const postComments = pgTable("post_comments", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  postId: varchar("post_id")
-    .notNull()
-    .references(() => communityPosts.id),
-  userName: text("user_name").notNull(),
-  userAvatar: text("user_avatar"),
-  text: text("text").notNull(),
-  timestamp: timestamp("timestamp")
-    .notNull()
-    .default(sql`now()`),
-});
-
-export const insertUserSchema = createInsertSchema(users).omit({
+export const insertCigarSchema = createInsertSchema(cigars).omit({
   id: true,
-  createdAt: true,
+  calendarEventId: true,
 });
-export const upsertUserSchema = z.object({
-  id: z.string(),
-  username: z.string().optional(),
-  email: z.string().email().optional(),
-});
-export const insertCigarSchema = createInsertSchema(cigars)
-  .omit({ id: true, calendarEventId: true })
-  .extend({ date: z.coerce.date() });
+
 export const insertReleaseSchema = createInsertSchema(releases).omit({
   id: true,
 });
-export const insertEventSchema = createInsertSchema(events)
-  .omit({ id: true })
-  .extend({ date: z.coerce.date() });
-export const insertCommunityPostSchema = createInsertSchema(communityPosts)
-  .omit({ id: true, timestamp: true, likes: true, comments: true })
-  .extend({ imageUrl: z.string().optional() });
-export const insertPostCommentSchema = createInsertSchema(postComments).omit({
+
+export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
-  timestamp: true,
 });
 
-export type UpsertUser = z.infer<typeof upsertUserSchema>;
+export const insertCommunityPostSchema = createInsertSchema(communityPosts).omit({
+  id: true,
+  timestamp: true,
+  likes: true,
+  comments: true,
+});
+
+// Types
+export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
 export type InsertCigar = z.infer<typeof insertCigarSchema>;
 export type Cigar = typeof cigars.$inferSelect;
+
 export type InsertRelease = z.infer<typeof insertReleaseSchema>;
 export type Release = typeof releases.$inferSelect;
+
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
+
 export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
 export type CommunityPost = typeof communityPosts.$inferSelect;
-export type InsertPostComment = z.infer<typeof insertPostCommentSchema>;
-export type PostComment = typeof postComments.$inferSelect;

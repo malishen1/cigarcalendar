@@ -1,8 +1,17 @@
-# Cigar Calendar Application
+# Cigar Tracker Application
 
 ## Overview
 
-A premium cigar tracking application that allows enthusiasts to log, review, and discover cigars. The application features personal tracking with ratings and notes, upcoming cigar releases, industry events, and community engagement. Designed with an elegant, sophisticated interface inspired by premium tracking apps like Vivino and Untappd, combined with the clean data organization principles of Notion.
+A premium cigar tracking web application that lets users log cigar sessions, browse upcoming releases, discover events, and engage with a community feed. Inspired by lifestyle tracking apps like Vivino and Untappd, the app emphasizes elegant, uncluttered design that celebrates the ritual of cigar appreciation.
+
+Core features:
+- **Dashboard**: Overview stats and recent cigar entries
+- **Log Cigar**: Form to record a cigar session (name, brand, rating, strength, duration, notes)
+- **History**: Searchable, filterable list of all logged cigars with edit/delete support
+- **Releases**: Browse upcoming and recent cigar releases with region filters
+- **Events**: Cigar festivals, tastings, and virtual lounges with search and type filters
+- **Community**: Social feed for sharing and liking cigar reviews
+- **Google Calendar Integration**: Optionally sync cigar sessions as calendar events
 
 ## User Preferences
 
@@ -12,93 +21,91 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 
-**Framework & Build System**
-- **React 18** with TypeScript for type-safe component development
-- **Vite** as the build tool and development server, providing fast HMR and optimized production builds
-- **Wouter** for lightweight client-side routing instead of React Router
-- **TanStack Query (React Query)** for server state management, data fetching, and caching
-
-**UI Component System**
-- **shadcn/ui** component library built on Radix UI primitives (New York style variant)
-- **Tailwind CSS** for utility-first styling with custom design tokens
-- **class-variance-authority** for managing component variants
-- Custom design system following premium lifestyle app patterns:
-  - Typography: Crimson Pro (serif) for headings, Inter (sans-serif) for body text
-  - Color scheme: Neutral base with primary/secondary/destructive variants
-  - Consistent spacing scale using Tailwind units (2, 4, 6, 8)
-  - Responsive breakpoints: mobile (base), tablet (md), desktop (lg)
-
-**State Management Pattern**
-- Server state managed via TanStack Query with optimistic updates
-- Local UI state managed via React hooks (useState, useContext)
-- Form state handled by React Hook Form with Zod validation
-- Toast notifications via custom useToast hook
+- **Framework**: React (with TypeScript), bootstrapped via Vite
+- **Routing**: `wouter` — lightweight client-side routing; routes defined in `App.tsx`
+- **State & Data Fetching**: TanStack Query (React Query) for server state; local component state via `useState` for UI-only state
+- **Forms**: Controlled components using React `useState`; validation via Zod schemas imported from the shared schema
+- **UI Components**: shadcn/ui (Radix UI primitives + Tailwind CSS), located in `client/src/components/ui/`
+- **Styling**: Tailwind CSS with CSS variables for theming; supports light/dark mode toggled via `localStorage` and `document.documentElement.classList`
+- **Fonts**: Crimson Pro (serif, for headings/cigar names) and Inter (sans-serif, for body/UI) via Google Fonts
+- **Path Aliases**: `@/` maps to `client/src/`, `@shared/` maps to `shared/`
 
 ### Backend Architecture
 
-**Server Framework**
-- **Express.js** running on Node.js for HTTP server
-- **TypeScript** with ES modules for type safety across the stack
-- Custom middleware for request logging and JSON parsing
-- Session management with connect-pg-simple for PostgreSQL-backed sessions
+- **Framework**: Express.js (TypeScript, ESM modules)
+- **Entry Point**: `server/index.ts` sets up Express, registers routes, and serves the Vite frontend (dev) or static files (prod)
+- **Routes**: Defined in `server/routes.ts`; RESTful API under `/api/` for cigars, releases, events, community posts, and stats
+- **Storage Layer**: Abstract `IStorage` interface in `server/storage.ts` with a `MemStorage` in-memory implementation; designed to be swapped with a database-backed implementation
+- **Build**: Vite builds the frontend to `dist/public/`; esbuild bundles the server to `dist/index.js` for production
 
-**API Design**
-- RESTful API endpoints organized by resource (cigars, releases, events, community)
-- Standard HTTP methods: GET for retrieval, POST for creation, PATCH for updates, DELETE for removal
-- Consistent JSON request/response format
-- Error handling with appropriate HTTP status codes
+### API Endpoints
 
-**Storage Layer**
-- **Drizzle ORM** for type-safe database operations and schema management
-- Interface-based storage abstraction (IStorage) allowing for multiple implementations
-- In-memory storage implementation (MemStorage) for development/testing
-- Schema definitions using Drizzle's pgTable with TypeScript inference
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET/POST | `/api/cigars` | List all / create cigar entry |
+| GET/PUT/DELETE | `/api/cigars/:id` | Single cigar operations |
+| GET/POST | `/api/releases` | List / create releases |
+| GET/POST | `/api/events` | List / create events |
+| GET/POST | `/api/community` | List / create community posts |
+| POST | `/api/community/:id/like` | Like a community post |
+| GET | `/api/stats` | Dashboard summary stats |
 
-### Data Model
+### Database
 
-**Core Entities**
-- **Users**: Authentication and user management (id, username, password)
-- **Cigars**: Personal cigar logging with ratings, notes, duration, strength, and calendar integration
-- **Releases**: Upcoming cigar releases with brand, region, availability tracking
-- **Events**: Industry events (festivals, tastings, virtual lounges) with location and attendee data
-- **Community Posts**: User-generated content with likes and comments
+- **ORM**: Drizzle ORM with PostgreSQL dialect (`drizzle-orm/pg-core`)
+- **Database**: Neon Serverless Postgres (`@neondatabase/serverless`); connection URL via `DATABASE_URL` environment variable
+- **Schema** (`shared/schema.ts`): Five tables — `users`, `cigars`, `releases`, `events`, `community_posts`; all use UUID primary keys generated by `gen_random_uuid()`
+- **Migrations**: Drizzle Kit, output to `./migrations/`; run with `npm run db:push`
+- **Validation**: `drizzle-zod` generates Zod insert schemas from Drizzle table definitions; these are shared between client and server via the `@shared/` alias
 
-**Schema Patterns**
-- UUID primary keys generated via PostgreSQL's gen_random_uuid()
-- Timestamp fields for temporal data (dates, release dates)
-- Optional fields for flexibility in data entry
-- Type-safe schema validation using drizzle-zod
+**Key schema fields:**
+- `cigars`: cigarName, brand, rating (int), date (timestamp), notes, duration (minutes), strength (text), calendarEventId
+- `releases`: name, brand, releaseDate, region, availability, description
+- `events`: name, date, location, type, description, attendees, link
+- `communityPosts`: userName, userAvatar, cigarName, brand, rating, comment, timestamp, likes, comments
 
-### External Dependencies
+### Authentication
 
-**Database**
-- **PostgreSQL** via @neondatabase/serverless for serverless PostgreSQL connections
-- Configured via DATABASE_URL environment variable
-- Migrations managed in ./migrations directory via Drizzle Kit
+- `users` table exists with username/password fields
+- `connect-pg-simple` is listed as a dependency (session store for PostgreSQL)
+- No authentication middleware is currently wired into routes — this is a placeholder/future feature
 
-**Google Calendar Integration**
-- **Google Calendar API** (googleapis package) for syncing cigar sessions
-- OAuth 2.0 authentication via Replit Connectors
-- Automatic event creation/update/deletion with cigar details
-- Token refresh handled automatically via connector service
-- Calendar event IDs stored in cigar records for synchronization
+### Theme System
 
-**Development Tools**
-- Replit-specific plugins for development:
-  - @replit/vite-plugin-runtime-error-modal for error overlays
-  - @replit/vite-plugin-cartographer for code navigation
-  - @replit/vite-plugin-dev-banner for development indicators
-- Hot module replacement in development mode
+- CSS custom properties (HSL-based) defined in `client/src/index.css` for both light (`:root`) and dark (`.dark`) modes
+- Theme persisted to `localStorage`; toggled by adding/removing `.dark` class on `<html>`
+- Tailwind `darkMode: ["class"]` configured to follow this pattern
 
-**Build & Deployment**
-- Production build: Vite for frontend, esbuild for backend bundling
-- Static assets served from dist/public
-- Environment-based configuration (NODE_ENV)
-- TypeScript compilation checking via tsc
+## External Dependencies
 
-**UI Dependencies**
-- Extensive Radix UI component primitives for accessibility
-- date-fns for date formatting and manipulation
-- embla-carousel-react for carousel components
-- lucide-react for icon system
-- cmdk for command palette functionality
+### Google Calendar Integration
+
+- **Library**: `googleapis` Node.js client
+- **Auth**: OAuth2 access token fetched via Replit Connectors API (`REPLIT_CONNECTORS_HOSTNAME` + `REPL_IDENTITY` or `WEB_REPL_RENEWAL` env vars)
+- **Connector Name**: `google-calendar`
+- **Usage**: When a user logs a cigar and checks "Add to Calendar", `server/calendar.ts` creates a Google Calendar event and stores the returned event ID in `cigars.calendarEventId`
+- **Requirement**: Must be connected via Replit's Google Calendar connector; fails gracefully if not connected
+
+### Replit-Specific Plugins (Dev Only)
+
+- `@replit/vite-plugin-runtime-error-modal` — always active in dev
+- `@replit/vite-plugin-cartographer` — code navigation in Replit IDE
+- `@replit/vite-plugin-dev-banner` — dev environment banner
+
+### Key NPM Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| `@neondatabase/serverless` | Neon Postgres driver |
+| `drizzle-orm` + `drizzle-kit` | ORM and migration tooling |
+| `drizzle-zod` | Zod schema generation from Drizzle tables |
+| `@tanstack/react-query` | Server state management |
+| `wouter` | Client-side routing |
+| `@radix-ui/*` | Headless UI primitives |
+| `class-variance-authority` + `clsx` + `tailwind-merge` | Tailwind class utilities |
+| `date-fns` | Date formatting and manipulation |
+| `lucide-react` | Icon library |
+| `connect-pg-simple` | PostgreSQL session store (future auth) |
+| `googleapis` | Google Calendar API client |
+| `nanoid` | Unique ID generation (used in Vite server setup) |
+| `zod` | Runtime validation |

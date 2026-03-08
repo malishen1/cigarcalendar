@@ -25,6 +25,24 @@ interface CigarEntryCardProps {
 }
 
 export default function CigarEntryCard({ entry, onEdit, onDelete }: CigarEntryCardProps) {
+  const handleDownloadCalendar = () => {
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const url = `/api/cigars/${entry.id}/download-calendar`;
+    
+    if (isIOS) {
+      // iOS Safari will offer to add to Calendar when receiving .ics
+      window.open(url, '_blank');
+    } else {
+      // Other browsers: download the file
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${entry.cigarName}.ics`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
+
   return (
     <Card className="overflow-hidden hover-elevate transition-all">
       <div className="flex flex-col md:flex-row">
@@ -58,10 +76,8 @@ export default function CigarEntryCard({ entry, onEdit, onDelete }: CigarEntryCa
               <Button
                 size="icon"
                 variant="ghost"
-                onClick={() => {
-                  window.location.href = `/api/cigars/${entry.id}/download-calendar`;
-                }}
-                title="Download calendar file for iOS Calendar, Google Calendar, Outlook, etc."
+                onClick={handleDownloadCalendar}
+                title="Download as calendar event"
                 data-testid={`button-download-calendar-${entry.id}`}
               >
                 <Download className="w-4 h-4" />
