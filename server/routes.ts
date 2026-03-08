@@ -401,6 +401,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Calling Anthropic API with", history.length, "cigars");
       
+      const requestBody = {
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 1000,
+        temperature: 1,
+        messages: [
+          {
+            role: "user",
+            content: `You are a world-class cigar sommelier. Analyze this cigar history and recommend 3 cigars they would love. Respond ONLY with a valid JSON array, no markdown, no explanation.
+
+Cigar history: ${JSON.stringify(history)}
+
+Format exactly: [{"name":"cigar name","brand":"brand name","strength":"Mild/Medium/Full","flavors":["flavor1","flavor2","flavor3"],"reason":"why they'll love it based on their history","rating":"93/100"}]`,
+          },
+        ],
+      };
+      
+      console.log("Request body:", JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -408,23 +426,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
-        body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 1500,
-          system: `You are a world-class cigar sommelier. Analyze the user's cigar history and recommend 3 cigars they would love. Respond ONLY with a valid JSON array, no markdown, no explanation. Format exactly: [{"name":"cigar name","brand":"brand name","strength":"Mild/Medium/Full","flavors":["flavor1","flavor2","flavor3"],"reason":"why they'll love it based on their history","rating":"93/100"}]`,
-          messages: [
-            {
-              role: "user",
-              content: `Based on my cigar history, recommend 3 cigars I would love. Return valid JSON array: ${JSON.stringify(history)}`,
-            },
-          ],
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Anthropic API error status:", response.status, errorText);
-        return res.status(response.status).json({ error: `Anthropic API error: ${response.status}` });
+        console.error("Anthropic API error status:", response.status);
+        console.error("Anthropic API error response:", errorText);
+        
+        let errorMessage = `Anthropic API error: ${response.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          console.error("Parsed error:", JSON.stringify(errorJson, null, 2));
+          if (errorJson.error?.message) {
+            errorMessage = errorJson.error.message;
+          }
+        } catch (e) {
+          // Error text is not JSON
+        }
+        
+        return res.status(response.status).json({ error: errorMessage });
       }
 
       const data = await response.json();
