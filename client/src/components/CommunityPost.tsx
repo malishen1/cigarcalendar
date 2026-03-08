@@ -64,7 +64,10 @@ export default function CommunityPost({
   });
 
   const likeMutation = useMutation({
-    mutationFn: () => apiRequest("POST", `/api/community/${post.id}/like`, {}),
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/community/${post.id}/like`, {});
+      return res.json();
+    },
     onSuccess: (data: any) => {
       setIsLiked(data.liked);
       setLikeCount(data.likes);
