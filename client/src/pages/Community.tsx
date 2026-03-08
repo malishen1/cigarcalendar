@@ -103,13 +103,16 @@ export default function Community() {
 
   const handlePost = () => {
     if (!newPost.trim() && !photo) return;
-    createPostMutation.mutate({
+    const postData: any = {
       userName: user?.username || "Anonymous",
       cigarName: "Custom Cigar",
       rating: 0,
       comment: newPost,
-      imageUrl: photo,
-    });
+    };
+    if (photo) {
+      postData.imageUrl = photo;
+    }
+    createPostMutation.mutate(postData);
   };
 
   const formattedPosts: CommunityPostType[] = (posts as any[]).map((post) => ({
