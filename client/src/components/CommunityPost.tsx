@@ -31,9 +31,13 @@ interface PostComment {
 
 interface CommunityPostProps {
   post: CommunityPost;
+  onUserClick?: (username: string) => void;
 }
 
-export default function CommunityPost({ post }: CommunityPostProps) {
+export default function CommunityPost({
+  post,
+  onUserClick,
+}: CommunityPostProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [showComments, setShowComments] = useState(false);
@@ -106,9 +110,12 @@ export default function CommunityPost({ post }: CommunityPostProps) {
           </Avatar>
         </div>
         <div className="flex-1">
-          <p className="text-xs uppercase tracking-widest font-light">
+          <button
+            onClick={() => onUserClick?.(post.userName)}
+            className="text-xs uppercase tracking-widest font-light hover:text-primary transition-colors"
+          >
             {post.userName}
-          </p>
+          </button>
           <p className="text-xs text-muted-foreground font-light">
             {formatDistanceToNow(post.timestamp, { addSuffix: true })}
           </p>
