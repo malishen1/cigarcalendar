@@ -1,10 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle, Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export interface CommunityPost {
   id: string;
@@ -37,16 +38,42 @@ export default function CommunityPost({
   const [commentText, setCommentText] = useState("");
   const { toast } = useToast();
 
+  // Check if current user already liked this post
+  const { data: likeStatus } = useQuery({
+    queryKey: [`/api/community/${post.id}/liked`],
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (likeStatus && (likeStatus as any).liked) {
+      setIsLiked(true);
+    }
+  }, [likeStatus]);
+
+  // Keep like count in sync with prop
+  useEffect(() => {
+    setLikeCount(post.likes);
+  }, [post.likes]);
+
   const initials = post.userName
     .split(" ")
     .map((n) => n[0])
     .join("")
     .toUpperCase();
 
+  const likeMutation = useMutation({
+    mutationFn: () => apiRequest("POST", `/api/community/${post.id}/like`, {}),
+    onSuccess: (data: any) => {
+      setIsLiked(data.liked);
+      setLikeCount(data.likes);
+    },
+    onError: () => {
+      toast({ variant: "destructive", title: "Must be logged in to like" });
+    },
+  });
+
   const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikeCount(isLiked ? likeCount - 1 : likeCount + 1);
-    if (onLike) onLike(post.id);
+    likeMutation.mutate();
   };
 
   const handleComment = () => {
@@ -94,6 +121,7 @@ export default function CommunityPost({
       <div className="px-4 pt-3 pb-1 flex items-center gap-4">
         <button
           onClick={handleLike}
+          disabled={likeMutation.isPending}
           className={`flex items-center gap-1.5 transition-colors ${isLiked ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Heart className={`w-5 h-5 ${isLiked ? "fill-red-500" : ""}`} />

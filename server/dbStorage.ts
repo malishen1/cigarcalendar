@@ -14,9 +14,10 @@ import {
   releases,
   events,
   communityPosts,
+  postLikes,
 } from "@shared/schema";
 import { db } from "../db/index";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import type { IStorage } from "./storage";
 
 export class DbStorage implements IStorage {
@@ -166,14 +167,7 @@ export class DbStorage implements IStorage {
     email: string;
     password: string;
   }): Promise<User> {
-    const result = await db
-      .insert(users)
-      .values({
-        username: userData.username,
-        email: userData.email,
-        password: userData.password,
-      })
-      .returning();
+    const result = await db.insert(users).values(userData).returning();
     return result[0];
   }
 
@@ -197,10 +191,7 @@ export class DbStorage implements IStorage {
       })
       .onConflictDoUpdate({
         target: users.id,
-        set: {
-          username: userData.username ?? "",
-          email: userData.email ?? "",
-        },
+        set: { username: userData.username ?? "", email: userData.email ?? "" },
       })
       .returning();
     return result[0];
@@ -351,6 +342,46 @@ export class DbStorage implements IStorage {
       .values(insertPost)
       .returning();
     return result[0];
+  }
+
+  async hasLiked(postId: string, userId: string): Promise<boolean> {
+    const result = await db
+      .select()
+      .from(postLikes)
+      .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)))
+      .limit(1);
+    return result.length > 0;
+  }
+
+  async toggleLike(
+    postId: string,
+    userId: string,
+  ): Promise<{ liked: boolean; likes: number }> {
+    const existing = await db
+      .select()
+      .from(postLikes)
+      .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)))
+      .limit(1);
+
+    if (existing.length > 0) {
+      await db
+        .delete(postLikes)
+        .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)));
+      const result = await db
+        .update(communityPosts)
+        .set({ likes: sql`${communityPosts.likes} - 1` })
+        .where(eq(communityPosts.id, postId))
+        .returning();
+      return { liked: false, likes: result[0]?.likes ?? 0 };
+    } else {
+      await db.insert(postLikes).values({ postId, userId });
+      const result = await db
+        .update(communityPosts)
+        .set({ likes: sql`${communityPosts.likes} + 1` })
+        .where(eq(communityPosts.id, postId))
+        .returning();
+      return { liked: true, likes: result[0]?.likes ?? 0 };
+    }
   }
 
   async likeCommunityPost(id: string): Promise<CommunityPost | undefined> {

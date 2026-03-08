@@ -10,7 +10,6 @@ import {
   type CommunityPost,
   type InsertCommunityPost,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -45,6 +44,11 @@ export interface IStorage {
   getCommunityPost(id: string): Promise<CommunityPost | undefined>;
   getAllCommunityPosts(): Promise<CommunityPost[]>;
   createCommunityPost(post: InsertCommunityPost): Promise<CommunityPost>;
+  hasLiked(postId: string, userId: string): Promise<boolean>;
+  toggleLike(
+    postId: string,
+    userId: string,
+  ): Promise<{ liked: boolean; likes: number }>;
   likeCommunityPost(id: string): Promise<CommunityPost | undefined>;
   commentOnCommunityPost(id: string): Promise<CommunityPost | undefined>;
 }
