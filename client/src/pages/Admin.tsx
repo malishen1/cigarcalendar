@@ -2,13 +2,26 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { z } from "zod";
@@ -48,11 +61,7 @@ export default function Admin() {
       setAuthenticated(true);
       setPassword("");
     } else {
-      toast({
-        title: "Invalid password",
-        description: "Please try again",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid password", variant: "destructive" });
       setPassword("");
     }
   };
@@ -61,21 +70,21 @@ export default function Admin() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-sm p-8">
-          <h1 className="text-3xl font-serif font-semibold mb-6">Admin Panel</h1>
+          <div className="flex items-center gap-3 mb-6">
+            <Lock className="w-6 h-6 text-primary" />
+            <h1 className="text-3xl font-serif font-semibold">Admin Panel</h1>
+          </div>
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  data-testid="input-admin-password"
-                />
-              </FormControl>
-            </FormItem>
-            <Button type="submit" className="w-full" data-testid="button-admin-submit">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Password</label>
+              <Input
+                type="password"
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <Button type="submit" className="w-full">
               Sign In
             </Button>
           </form>
@@ -88,32 +97,20 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
         <h1 className="text-4xl font-serif font-semibold mb-8">Admin Panel</h1>
-
         <div className="flex gap-4 mb-8 border-b">
           <button
             onClick={() => setActiveTab("releases")}
-            className={`pb-4 px-2 font-medium transition-colors ${
-              activeTab === "releases"
-                ? "text-foreground border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            data-testid="tab-releases"
+            className={`pb-4 px-2 font-medium transition-colors ${activeTab === "releases" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
           >
             Releases
           </button>
           <button
             onClick={() => setActiveTab("events")}
-            className={`pb-4 px-2 font-medium transition-colors ${
-              activeTab === "events"
-                ? "text-foreground border-b-2 border-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-            data-testid="tab-events"
+            className={`pb-4 px-2 font-medium transition-colors ${activeTab === "events" ? "text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
           >
             Events
           </button>
         </div>
-
         {activeTab === "releases" && <ReleasesSection />}
         {activeTab === "events" && <EventsSection />}
       </div>
@@ -140,47 +137,40 @@ function ReleasesSection() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: ReleaseFormData) => {
-      return apiRequest("POST", "/api/releases", {
+    mutationFn: async (data: ReleaseFormData) =>
+      apiRequest("POST", "/api/releases", {
         ...data,
         releaseDate: new Date(data.releaseDate),
-      });
-    },
+      }),
     onSuccess: () => {
-      toast({ title: "Release created successfully" });
+      toast({ title: "Release created!" });
       form.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/releases"] });
     },
-    onError: () => {
-      toast({
-        title: "Failed to create release",
-        variant: "destructive",
-      });
-    },
+    onError: () =>
+      toast({ title: "Failed to create release", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/releases/${id}`);
-    },
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/releases/${id}`),
     onSuccess: () => {
-      toast({ title: "Release deleted successfully" });
+      toast({ title: "Release deleted!" });
       queryClient.invalidateQueries({ queryKey: ["/api/releases"] });
     },
-    onError: () => {
-      toast({
-        title: "Failed to delete release",
-        variant: "destructive",
-      });
-    },
+    onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
   });
 
   return (
     <div className="space-y-8">
       <Card className="p-6">
-        <h2 className="text-2xl font-serif font-semibold mb-6">Add New Release</h2>
+        <h2 className="text-2xl font-serif font-semibold mb-6">
+          Add New Release
+        </h2>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => createMutation.mutate(data))} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
+            className="space-y-4"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -189,7 +179,7 @@ function ReleasesSection() {
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Cigar name" {...field} data-testid="input-release-name" />
+                      <Input placeholder="Cigar name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -202,7 +192,7 @@ function ReleasesSection() {
                   <FormItem>
                     <FormLabel>Brand</FormLabel>
                     <FormControl>
-                      <Input placeholder="Brand" {...field} data-testid="input-release-brand" />
+                      <Input placeholder="Brand" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -215,7 +205,7 @@ function ReleasesSection() {
                   <FormItem>
                     <FormLabel>Release Date</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} data-testid="input-release-date" />
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -228,7 +218,7 @@ function ReleasesSection() {
                   <FormItem>
                     <FormLabel>Region</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g., Cuba, Nicaragua" {...field} data-testid="input-release-region" />
+                      <Input placeholder="e.g. UK & Europe" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -242,7 +232,7 @@ function ReleasesSection() {
                     <FormLabel>Availability</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-release-availability">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -264,14 +254,16 @@ function ReleasesSection() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Optional description" {...field} data-testid="textarea-release-description" />
+                    <Textarea placeholder="Optional" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={createMutation.isPending} data-testid="button-create-release">
-              {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button type="submit" disabled={createMutation.isPending}>
+              {createMutation.isPending && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
               Add Release
             </Button>
           </form>
@@ -279,42 +271,41 @@ function ReleasesSection() {
       </Card>
 
       <div>
-        <h2 className="text-2xl font-serif font-semibold mb-4">Existing Releases</h2>
+        <h2 className="text-2xl font-serif font-semibold mb-4">
+          Existing Releases
+        </h2>
         {isLoading ? (
-          <Card className="p-8 text-center text-muted-foreground">Loading releases...</Card>
-        ) : !releases || releases.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">No releases yet</Card>
+          <Card className="p-8 text-center text-muted-foreground">
+            Loading...
+          </Card>
+        ) : !releases?.length ? (
+          <Card className="p-8 text-center text-muted-foreground">
+            No releases yet
+          </Card>
         ) : (
           <div className="space-y-3">
             {releases.map((release) => (
               <Card key={release.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg" data-testid={`text-release-name-${release.id}`}>
-                      {release.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground" data-testid={`text-release-brand-${release.id}`}>
-                      {release.brand} • {release.region}
+                    <h3 className="font-semibold">{release.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {release.brand} • {release.region} •{" "}
+                      {release.availability}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1" data-testid={`text-release-availability-${release.id}`}>
-                      {release.availability} • {new Date(release.releaseDate).toLocaleDateString()}
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(release.releaseDate).toLocaleDateString()}
                     </p>
                     {release.description && (
-                      <p className="text-sm mt-2 text-foreground">{release.description}</p>
+                      <p className="text-sm mt-1">{release.description}</p>
                     )}
                   </div>
                   <Button
                     variant="destructive"
                     size="icon"
                     onClick={() => deleteMutation.mutate(release.id)}
-                    disabled={deleteMutation.isPending}
-                    data-testid={`button-delete-release-${release.id}`}
                   >
-                    {deleteMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </Card>
@@ -346,8 +337,8 @@ function EventsSection() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: EventFormData) => {
-      return apiRequest("POST", "/api/events", {
+    mutationFn: async (data: EventFormData) =>
+      apiRequest("POST", "/api/events", {
         name: data.name,
         date: new Date(data.date),
         location: data.location,
@@ -355,43 +346,36 @@ function EventsSection() {
         description: data.description || null,
         maxCapacity: data.maxCapacity ? parseInt(data.maxCapacity) : null,
         link: data.link || null,
-      });
-    },
+      }),
     onSuccess: () => {
-      toast({ title: "Event created successfully" });
+      toast({ title: "Event created!" });
       form.reset();
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
     },
-    onError: () => {
-      toast({
-        title: "Failed to create event",
-        variant: "destructive",
-      });
-    },
+    onError: () =>
+      toast({ title: "Failed to create event", variant: "destructive" }),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/events/${id}`);
-    },
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/events/${id}`),
     onSuccess: () => {
-      toast({ title: "Event deleted successfully" });
+      toast({ title: "Event deleted!" });
       queryClient.invalidateQueries({ queryKey: ["/api/events"] });
     },
-    onError: () => {
-      toast({
-        title: "Failed to delete event",
-        variant: "destructive",
-      });
-    },
+    onError: () => toast({ title: "Failed to delete", variant: "destructive" }),
   });
 
   return (
     <div className="space-y-8">
       <Card className="p-6">
-        <h2 className="text-2xl font-serif font-semibold mb-6">Add New Event</h2>
+        <h2 className="text-2xl font-serif font-semibold mb-6">
+          Add New Event
+        </h2>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => createMutation.mutate(data))} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
+            className="space-y-4"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -400,7 +384,7 @@ function EventsSection() {
                   <FormItem>
                     <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="Event name" {...field} data-testid="input-event-name" />
+                      <Input placeholder="Event name" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -413,7 +397,7 @@ function EventsSection() {
                   <FormItem>
                     <FormLabel>Date</FormLabel>
                     <FormControl>
-                      <Input type="datetime-local" {...field} data-testid="input-event-date" />
+                      <Input type="datetime-local" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -426,7 +410,7 @@ function EventsSection() {
                   <FormItem>
                     <FormLabel>Location</FormLabel>
                     <FormControl>
-                      <Input placeholder="Location" {...field} data-testid="input-event-location" />
+                      <Input placeholder="Location" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -440,7 +424,7 @@ function EventsSection() {
                     <FormLabel>Type</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-event-type">
+                        <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -462,7 +446,7 @@ function EventsSection() {
                   <FormItem>
                     <FormLabel>Max Capacity</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Optional" {...field} data-testid="input-event-capacity" />
+                      <Input type="number" placeholder="Optional" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -475,7 +459,7 @@ function EventsSection() {
                   <FormItem>
                     <FormLabel>Link</FormLabel>
                     <FormControl>
-                      <Input type="url" placeholder="Optional" {...field} data-testid="input-event-link" />
+                      <Input placeholder="Optional URL" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -489,14 +473,16 @@ function EventsSection() {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Optional description" {...field} data-testid="textarea-event-description" />
+                    <Textarea placeholder="Optional" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={createMutation.isPending} data-testid="button-create-event">
-              {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            <Button type="submit" disabled={createMutation.isPending}>
+              {createMutation.isPending && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              )}
               Add Event
             </Button>
           </form>
@@ -504,52 +490,40 @@ function EventsSection() {
       </Card>
 
       <div>
-        <h2 className="text-2xl font-serif font-semibold mb-4">Existing Events</h2>
+        <h2 className="text-2xl font-serif font-semibold mb-4">
+          Existing Events
+        </h2>
         {isLoading ? (
-          <Card className="p-8 text-center text-muted-foreground">Loading events...</Card>
-        ) : !events || events.length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">No events yet</Card>
+          <Card className="p-8 text-center text-muted-foreground">
+            Loading...
+          </Card>
+        ) : !events?.length ? (
+          <Card className="p-8 text-center text-muted-foreground">
+            No events yet
+          </Card>
         ) : (
           <div className="space-y-3">
             {events.map((event) => (
               <Card key={event.id} className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg" data-testid={`text-event-name-${event.id}`}>
-                      {event.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground" data-testid={`text-event-type-${event.id}`}>
+                    <h3 className="font-semibold">{event.name}</h3>
+                    <p className="text-sm text-muted-foreground">
                       {event.type} • {event.location}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1" data-testid={`text-event-date-${event.id}`}>
-                      {new Date(event.date).toLocaleDateString()} at {new Date(event.date).toLocaleTimeString()}
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(event.date).toLocaleDateString()}
                     </p>
-                    {event.maxCapacity && (
-                      <p className="text-xs text-muted-foreground" data-testid={`text-event-capacity-${event.id}`}>
-                        Capacity: {event.attendees ?? 0} / {event.maxCapacity}
-                      </p>
-                    )}
                     {event.description && (
-                      <p className="text-sm mt-2 text-foreground">{event.description}</p>
-                    )}
-                    {event.link && (
-                      <a href={event.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-2 block" data-testid={`link-event-${event.id}`}>
-                        {event.link}
-                      </a>
+                      <p className="text-sm mt-1">{event.description}</p>
                     )}
                   </div>
                   <Button
                     variant="destructive"
                     size="icon"
                     onClick={() => deleteMutation.mutate(event.id)}
-                    disabled={deleteMutation.isPending}
-                    data-testid={`button-delete-event-${event.id}`}
                   >
-                    {deleteMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </Card>
