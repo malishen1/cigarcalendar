@@ -26,6 +26,7 @@ export default function AI() {
     if (!cigars || cigars.length === 0) return;
     setIsLoading(true);
     setError("");
+    setRecommendations([]);
 
     const history = cigars.slice(0, 20).map((c) => ({
       name: c.cigarName,
@@ -41,8 +42,21 @@ export default function AI() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ history }),
       });
-      if (!response.ok) throw new Error("Failed to get recommendations");
-      const parsed = await response.json();
+
+      const raw = await response.json();
+      console.log("AI response:", raw);
+
+      // Handle both array response and wrapped response
+      let parsed: Recommendation[] = [];
+      if (Array.isArray(raw)) {
+        parsed = raw;
+      } else if (raw.recommendations) {
+        parsed = raw.recommendations;
+      } else if (typeof raw === "string") {
+        parsed = JSON.parse(raw);
+      }
+
+      console.log("Parsed recommendations:", parsed);
       setRecommendations(parsed);
       setHasGenerated(true);
     } catch (err) {
@@ -170,6 +184,12 @@ export default function AI() {
                   </Card>
                 ))}
               </div>
+            )}
+
+            {!isLoading && hasGenerated && recommendations.length === 0 && (
+              <Card className="p-4 text-center text-muted-foreground">
+                No recommendations returned. Try again!
+              </Card>
             )}
           </>
         )}
