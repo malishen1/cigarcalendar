@@ -1,4 +1,4 @@
-# Cigar Tracker Application
+# Cigar Calendar Application
 
 ## Overview
 

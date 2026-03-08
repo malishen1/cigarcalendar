@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className="border-t py-6 mt-16">
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-          <span>© 2025 Cigar Tracker</span>
+          <span>© 2025 Cigar Calendar</span>
           <a
             href="https://instagram.com/cigarcalendar"
             target="_blank"

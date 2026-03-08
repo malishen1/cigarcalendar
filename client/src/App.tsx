@@ -26,7 +26,6 @@ import {
   Wand2,
   LogOut,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 
 function Navigation() {
@@ -45,57 +44,56 @@ function Navigation() {
 
   return (
     <>
-      <header className="border-b sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
-          <div className="flex items-center justify-between h-16">
+      <header className="border-b border-border sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="max-w-7xl mx-auto px-6 md:px-8">
+          <div className="flex items-center justify-between h-14">
             <button
               onClick={() => setLocation("/")}
-              className="flex items-center gap-2 hover-elevate px-2 py-1 rounded-md transition-all"
+              className="flex items-center gap-3 hover-elevate px-1 py-1 transition-all"
               data-testid="link-home"
             >
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-serif font-bold text-lg">
+              <div className="w-6 h-6 rounded-none bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-serif font-light text-sm">
                   C
                 </span>
               </div>
-              <span className="font-serif font-semibold text-xl hidden sm:inline">
-                Cigar Tracker
+              <span className="font-serif font-light text-base tracking-widest hidden sm:inline uppercase">
+                Cigar Calendar
               </span>
             </button>
 
-            <nav className="hidden lg:flex items-center gap-2">
+            <nav className="hidden lg:flex items-center gap-6">
               {navItems.map((item) => {
-                const Icon = item.icon;
                 const isActive = location === item.path;
                 return (
-                  <Button
+                  <button
                     key={item.path}
                     onClick={() => setLocation(item.path)}
-                    variant={isActive ? "secondary" : "ghost"}
-                    className="gap-2"
+                    className={`text-xs uppercase tracking-widest font-light transition-colors pb-0.5 ${
+                      isActive
+                        ? "text-foreground border-b border-primary"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
                     data-testid={`nav-${item.label.toLowerCase().replace(" ", "-")}`}
                   >
-                    <Icon className="w-4 h-4" />
                     {item.label}
-                  </Button>
+                  </button>
                 );
               })}
             </nav>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               {user && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-2"
+                <button
+                  className="text-xs uppercase tracking-widest font-light text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
                   onClick={() => {
                     window.location.href = "/api/logout";
                   }}
                   data-testid="button-logout"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Sign Out</span>
-                </Button>
+                </button>
               )}
               <ThemeToggle />
             </div>
@@ -103,8 +101,8 @@ function Navigation() {
         </div>
       </header>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="grid grid-cols-7 h-16">
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="grid grid-cols-7 h-14">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path;
@@ -115,10 +113,10 @@ function Navigation() {
                 className="flex flex-col items-center justify-center gap-1 h-full"
               >
                 <Icon
-                  className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                  className={`w-4 h-4 ${isActive ? "text-primary" : "text-muted-foreground"}`}
                 />
                 <span
-                  className={`text-xs ${isActive ? "text-foreground font-medium" : "text-muted-foreground"}`}
+                  className={`text-[9px] uppercase tracking-wider ${isActive ? "text-foreground" : "text-muted-foreground"}`}
                 >
                   {item.label}
                 </span>
@@ -137,7 +135,9 @@ function Router() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-muted-foreground">Loading...</div>
+        <p className="text-xs uppercase tracking-widest text-muted-foreground font-light">
+          Loading
+        </p>
       </div>
     );
   }
@@ -166,7 +166,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen pb-16 lg:pb-0">
+        <div className="min-h-screen pb-14 lg:pb-0">
           <Navigation />
           <Router />
           <Footer />
