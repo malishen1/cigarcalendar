@@ -38,22 +38,16 @@ export default function CommunityPost({
   const [commentText, setCommentText] = useState("");
   const { toast } = useToast();
 
-  // Check if current user already liked this post
   const { data: likeStatus } = useQuery({
     queryKey: [`/api/community/${post.id}/liked`],
     retry: false,
   });
 
   useEffect(() => {
-    if (likeStatus && (likeStatus as any).liked) {
-      setIsLiked(true);
+    if (likeStatus && (likeStatus as any).liked !== undefined) {
+      setIsLiked((likeStatus as any).liked);
     }
   }, [likeStatus]);
-
-  // Keep like count in sync with prop
-  useEffect(() => {
-    setLikeCount(post.likes);
-  }, [post.likes]);
 
   const initials = post.userName
     .split(" ")
@@ -85,7 +79,6 @@ export default function CommunityPost({
 
   return (
     <Card className="overflow-hidden">
-      {/* Header */}
       <div className="flex items-center gap-3 p-4">
         <div className="p-0.5 rounded-full bg-gradient-to-tr from-primary to-amber-300">
           <Avatar className="w-9 h-9 border-2 border-background">
@@ -106,7 +99,6 @@ export default function CommunityPost({
         )}
       </div>
 
-      {/* Photo */}
       {post.imageUrl && (
         <div className="w-full aspect-square overflow-hidden bg-muted">
           <img
@@ -117,7 +109,6 @@ export default function CommunityPost({
         </div>
       )}
 
-      {/* Actions */}
       <div className="px-4 pt-3 pb-1 flex items-center gap-4">
         <button
           onClick={handleLike}
@@ -125,7 +116,7 @@ export default function CommunityPost({
           className={`flex items-center gap-1.5 transition-colors ${isLiked ? "text-red-500" : "text-muted-foreground hover:text-foreground"}`}
         >
           <Heart className={`w-5 h-5 ${isLiked ? "fill-red-500" : ""}`} />
-          <span className="text-sm">{likeCount}</span>
+          <span className="text-sm font-medium">{likeCount}</span>
         </button>
         <button
           onClick={() => setShowComments((v) => !v)}
@@ -136,7 +127,6 @@ export default function CommunityPost({
         </button>
       </div>
 
-      {/* Caption */}
       {post.comment && (
         <p className="px-4 pb-3 text-sm">
           <span className="font-medium mr-1">
@@ -146,7 +136,6 @@ export default function CommunityPost({
         </p>
       )}
 
-      {/* Stars */}
       {post.rating > 0 && (
         <div className="px-4 pb-3 flex gap-0.5">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -160,7 +149,6 @@ export default function CommunityPost({
         </div>
       )}
 
-      {/* Comments section */}
       {showComments && (
         <div className="px-4 pb-4 border-t border-border pt-3 space-y-2">
           <div className="flex gap-2">
