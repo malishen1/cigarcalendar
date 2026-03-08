@@ -79,7 +79,10 @@ export default function Community() {
   });
 
   const createPostMutation = useMutation({
-    mutationFn: async (post: any) => apiRequest("POST", "/api/community", post),
+    mutationFn: async (post: any) => {
+      const res = await apiRequest("POST", "/api/community", post);
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/community"] });
       setNewPost("");
