@@ -9,6 +9,8 @@ import {
   type InsertEvent,
   type CommunityPost,
   type InsertCommunityPost,
+  type PostComment,
+  type InsertPostComment,
 } from "@shared/schema";
 
 export interface IStorage {
@@ -51,6 +53,8 @@ export interface IStorage {
   ): Promise<{ liked: boolean; likes: number }>;
   likeCommunityPost(id: string): Promise<CommunityPost | undefined>;
   commentOnCommunityPost(id: string): Promise<CommunityPost | undefined>;
+  getComments(postId: string): Promise<PostComment[]>;
+  createComment(comment: InsertPostComment): Promise<PostComment>;
 }
 
 import { DbStorage } from "./dbStorage";

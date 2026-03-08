@@ -382,13 +382,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/community/:id/comment", async (req, res) => {
+  app.get("/api/community/:id/comments", async (req, res) => {
     try {
-      const post = await storage.commentOnCommunityPost(req.params.id);
-      if (!post) return res.status(404).json({ error: "Post not found" });
-      res.json(post);
+      const comments = await storage.getComments(req.params.id);
+      res.json(comments);
     } catch (error) {
-      res.status(500).json({ error: "Failed to comment on post" });
+      res.status(500).json({ error: "Failed to fetch comments" });
+    }
+  });
+
+  app.post("/api/community/:id/comments", async (req: any, res) => {
+    try {
+      const userId = req.session?.userId;
+      const username = req.session?.username;
+      if (!userId || !username)
+        return res.status(401).json({ error: "Must be logged in to comment" });
+      const { text } = req.body;
+      if (!text?.trim())
+        return res.status(400).json({ error: "Comment text required" });
+      const comment = await storage.createComment({
+        postId: req.params.id,
+        userName: username,
+        text: text.trim(),
+      });
+      res.status(201).json(comment);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to post comment" });
     }
   });
 

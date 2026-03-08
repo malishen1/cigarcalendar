@@ -9,12 +9,15 @@ import {
   type InsertEvent,
   type CommunityPost,
   type InsertCommunityPost,
+  type PostComment,
+  type InsertPostComment,
   users,
   cigars,
   releases,
   events,
   communityPosts,
   postLikes,
+  postComments,
 } from "@shared/schema";
 import { db } from "../db/index";
 import { eq, desc, sql, and } from "drizzle-orm";
@@ -362,7 +365,6 @@ export class DbStorage implements IStorage {
       .from(postLikes)
       .where(and(eq(postLikes.postId, postId), eq(postLikes.userId, userId)))
       .limit(1);
-
     if (existing.length > 0) {
       await db
         .delete(postLikes)
@@ -399,6 +401,23 @@ export class DbStorage implements IStorage {
       .set({ comments: sql`${communityPosts.comments} + 1` })
       .where(eq(communityPosts.id, id))
       .returning();
+    return result[0];
+  }
+
+  async getComments(postId: string): Promise<PostComment[]> {
+    return db
+      .select()
+      .from(postComments)
+      .where(eq(postComments.postId, postId))
+      .orderBy(postComments.timestamp);
+  }
+
+  async createComment(comment: InsertPostComment): Promise<PostComment> {
+    const result = await db.insert(postComments).values(comment).returning();
+    await db
+      .update(communityPosts)
+      .set({ comments: sql`${communityPosts.comments} + 1` })
+      .where(eq(communityPosts.id, comment.postId));
     return result[0];
   }
 }
