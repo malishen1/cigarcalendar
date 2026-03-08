@@ -13,6 +13,7 @@ import Events from "@/pages/Events";
 import Community from "@/pages/Community";
 import AI from "@/pages/AI";
 import Admin from "@/pages/Admin";
+import Profile from "@/pages/Profile";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 import Footer from "@/components/Footer";
@@ -157,6 +158,7 @@ function Router() {
       <Route path="/ai" component={AI} />
       <Route path="/admin" component={Admin} />
       <Route path="/community" component={Community} />
+      <Route path="/profile/:username" component={Profile} />
       <Route component={NotFound} />
     </Switch>
   );
