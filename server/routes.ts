@@ -359,6 +359,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/community/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteCommunityPost(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Post not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete post" });
+    }
+  });
+
   app.get("/api/community/:id/liked", async (req: any, res) => {
     try {
       const userId = req.session?.userId;
@@ -408,6 +418,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(comment);
     } catch (error) {
       res.status(500).json({ error: "Failed to post comment" });
+    }
+  });
+
+  app.delete("/api/comments/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteComment(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Comment not found" });
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete comment" });
     }
   });
 

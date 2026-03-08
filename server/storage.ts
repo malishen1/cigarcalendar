@@ -46,6 +46,7 @@ export interface IStorage {
   getCommunityPost(id: string): Promise<CommunityPost | undefined>;
   getAllCommunityPosts(): Promise<CommunityPost[]>;
   createCommunityPost(post: InsertCommunityPost): Promise<CommunityPost>;
+  deleteCommunityPost(id: string): Promise<boolean>;
   hasLiked(postId: string, userId: string): Promise<boolean>;
   toggleLike(
     postId: string,
@@ -55,6 +56,7 @@ export interface IStorage {
   commentOnCommunityPost(id: string): Promise<CommunityPost | undefined>;
   getComments(postId: string): Promise<PostComment[]>;
   createComment(comment: InsertPostComment): Promise<PostComment>;
+  deleteComment(id: string): Promise<boolean>;
 }
 
 import { DbStorage } from "./dbStorage";

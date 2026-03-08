@@ -347,6 +347,15 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
+  async deleteCommunityPost(id: string): Promise<boolean> {
+    await db.delete(postComments).where(eq(postComments.postId, id));
+    await db.delete(postLikes).where(eq(postLikes.postId, id));
+    const result = await db
+      .delete(communityPosts)
+      .where(eq(communityPosts.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+
   async hasLiked(postId: string, userId: string): Promise<boolean> {
     const result = await db
       .select()
@@ -419,5 +428,21 @@ export class DbStorage implements IStorage {
       .set({ comments: sql`${communityPosts.comments} + 1` })
       .where(eq(communityPosts.id, comment.postId));
     return result[0];
+  }
+
+  async deleteComment(id: string): Promise<boolean> {
+    const comment = await db
+      .select()
+      .from(postComments)
+      .where(eq(postComments.id, id))
+      .limit(1);
+    if (comment[0]) {
+      await db
+        .update(communityPosts)
+        .set({ comments: sql`${communityPosts.comments} - 1` })
+        .where(eq(communityPosts.id, comment[0].postId));
+    }
+    const result = await db.delete(postComments).where(eq(postComments.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
   }
 }
