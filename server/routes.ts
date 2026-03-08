@@ -388,35 +388,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/recommendations", async (req, res) => {
     try {
       const { history } = req.body;
-      console.log("API KEY exists:", !!process.env.ANTHROPIC_API_KEY);
+      
+      if (!history || history.length === 0) {
+        return res.status(400).json({ error: "No cigar history provided" });
+      }
+
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      if (!apiKey) {
+        console.error("ANTHROPIC_API_KEY not set");
+        return res.status(500).json({ error: "API key not configured" });
+      }
+
+      console.log("Calling Anthropic API with", history.length, "cigars");
+      
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.ANTHROPIC_API_KEY || "",
+          "x-api-key": apiKey,
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: `You are a world-class cigar sommelier. Analyze the user's cigar history and recommend 3 cigars they would love. Respond ONLY with a JSON array, no markdown, no explanation. Format: [{"name":"cigar name","brand":"brand name","strength":"Mild/Medium/Full","flavors":["flavor1","flavor2","flavor3"],"reason":"why they'll love it based on their history","rating":"e.g. 93/100"}]`,
+          model: "claude-3-5-sonnet-20241022",
+          max_tokens: 1500,
+          system: `You are a world-class cigar sommelier. Analyze the user's cigar history and recommend 3 cigars they would love. Respond ONLY with a valid JSON array, no markdown, no explanation. Format exactly: [{"name":"cigar name","brand":"brand name","strength":"Mild/Medium/Full","flavors":["flavor1","flavor2","flavor3"],"reason":"why they'll love it based on their history","rating":"93/100"}]`,
           messages: [
             {
               role: "user",
-              content: `Based on my cigar history, recommend 3 cigars I would love: ${JSON.stringify(history)}`,
+              content: `Based on my cigar history, recommend 3 cigars I would love. Return valid JSON array: ${JSON.stringify(history)}`,
             },
           ],
         }),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Anthropic API error status:", response.status, errorText);
+        return res.status(response.status).json({ error: `Anthropic API error: ${response.status}` });
+      }
+
       const data = await response.json();
-      console.log("ANTHROPIC FULL RESPONSE:", JSON.stringify(data));
-      const text = data.content?.[0]?.text || "[]";
-      console.log("TEXT FROM AI:", text);
-      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+      console.log("Anthropic response:", JSON.stringify(data, null, 2));
+      
+      const text = data.content?.[0]?.text || "";
+      if (!text) {
+        console.error("No text in Anthropic response");
+        return res.status(500).json({ error: "Empty response from AI" });
+      }
+
+      console.log("AI text response:", text);
+      
+      // Clean and parse JSON
+      let parsed;
+      try {
+        const cleaned = text.replace(/```json\n?|```\n?/g, "").trim();
+        parsed = JSON.parse(cleaned);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError, "Text was:", text);
+        return res.status(500).json({ error: "Failed to parse AI response" });
+      }
+
+      if (!Array.isArray(parsed)) {
+        console.error("Parsed response is not an array:", parsed);
+        return res.status(500).json({ error: "Invalid response format" });
+      }
+
+      console.log("Returning recommendations:", parsed);
       res.json(parsed);
     } catch (error) {
-      console.error("AI error:", error);
-      res.status(500).json({ error: "Failed to get recommendations" });
+      console.error("AI recommendations error:", error);
+      res.status(500).json({ error: `Failed to get recommendations: ${error instanceof Error ? error.message : 'Unknown error'}` });
     }
   });
 

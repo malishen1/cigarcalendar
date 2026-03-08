@@ -43,6 +43,11 @@ export default function AI() {
         body: JSON.stringify({ history }),
       });
 
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `API error: ${response.status}`);
+      }
+
       const raw = await response.json();
       console.log("AI response:", raw);
 
@@ -56,12 +61,17 @@ export default function AI() {
         parsed = JSON.parse(raw);
       }
 
+      if (!parsed || parsed.length === 0) {
+        throw new Error("No recommendations received from AI");
+      }
+
       console.log("Parsed recommendations:", parsed);
       setRecommendations(parsed);
       setHasGenerated(true);
     } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to get recommendations";
       console.error("AI error:", err);
-      setError("Failed to get recommendations. Please try again.");
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -95,6 +105,11 @@ export default function AI() {
           </Card>
         ) : (
           <>
+            {error && (
+              <Card className="p-4 mb-8 bg-destructive/10 border-destructive/20">
+                <p className="text-sm text-destructive">{error}</p>
+              </Card>
+            )}
             <div className="mb-8 text-center">
               <Button
                 onClick={generateRecommendations}
