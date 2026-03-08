@@ -388,6 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/recommendations", async (req, res) => {
     try {
       const { history } = req.body;
+      console.log("API KEY exists:", !!process.env.ANTHROPIC_API_KEY);
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -408,7 +409,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }),
       });
       const data = await response.json();
+      console.log("ANTHROPIC FULL RESPONSE:", JSON.stringify(data));
       const text = data.content?.[0]?.text || "[]";
+      console.log("TEXT FROM AI:", text);
       const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
       res.json(parsed);
     } catch (error) {
