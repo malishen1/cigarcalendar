@@ -4,8 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body {
+  background-color: hsl(0, 0%, 5%);
+}
+
 /* LIGHT MODE */
 :root {
+  color-scheme: dark;
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
 
