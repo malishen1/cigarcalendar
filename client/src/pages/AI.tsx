@@ -18,12 +18,14 @@ export default function AI() {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
+  const [error, setError] = useState("");
 
   const { data: cigars } = useQuery<Cigar[]>({ queryKey: ["/api/cigars"] });
 
   const generateRecommendations = async () => {
     if (!cigars || cigars.length === 0) return;
     setIsLoading(true);
+    setError("");
 
     const history = cigars.slice(0, 20).map((c) => ({
       name: c.cigarName,
@@ -34,31 +36,18 @@ export default function AI() {
     }));
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("/api/ai/recommendations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: `You are a world-class cigar sommelier. Analyze the user's cigar history and recommend 3 cigars they would love. 
-          Respond ONLY with a JSON array, no markdown, no explanation. Format:
-          [{"name":"cigar name","brand":"brand name","strength":"Mild/Medium/Full","flavors":["flavor1","flavor2","flavor3"],"reason":"why they'll love it based on their history","rating":"e.g. 93/100"}]`,
-          messages: [
-            {
-              role: "user",
-              content: `Based on my cigar history, recommend 3 cigars I would love: ${JSON.stringify(history)}`,
-            },
-          ],
-        }),
+        body: JSON.stringify({ history }),
       });
-
-      const data = await response.json();
-      const text = data.content?.[0]?.text || "[]";
-      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+      if (!response.ok) throw new Error("Failed to get recommendations");
+      const parsed = await response.json();
       setRecommendations(parsed);
       setHasGenerated(true);
     } catch (err) {
       console.error("AI error:", err);
+      setError("Failed to get recommendations. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -109,20 +98,28 @@ export default function AI() {
                 {isLoading
                   ? "Analysing your taste..."
                   : hasGenerated
-                  ? "Regenerate"
-                  : "Get My Recommendations"}
+                    ? "Regenerate"
+                    : "Get My Recommendations"}
               </Button>
               {!hasGenerated && (
                 <p className="text-xs text-muted-foreground mt-2">
-                  Based on your {cigars.length} logged cigar{cigars.length !== 1 ? "s" : ""}
+                  Based on your {cigars.length} logged cigar
+                  {cigars.length !== 1 ? "s" : ""}
                 </p>
               )}
             </div>
 
+            {error && (
+              <Card className="p-4 text-center text-red-400 mb-4">{error}</Card>
+            )}
+
             {isLoading && (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-40 bg-card rounded-lg animate-pulse" />
+                  <div
+                    key={i}
+                    className="h-40 bg-card rounded-lg animate-pulse"
+                  />
                 ))}
               </div>
             )}
@@ -133,30 +130,41 @@ export default function AI() {
                   <Card key={i} className="p-6">
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
-                        <h3 className="text-xl font-semibold font-serif">{rec.name}</h3>
-                        <p className="text-muted-foreground text-sm">{rec.brand}</p>
+                        <h3 className="text-xl font-semibold font-serif">
+                          {rec.name}
+                        </h3>
+                        <p className="text-muted-foreground text-sm">
+                          {rec.brand}
+                        </p>
                       </div>
                       <div className="flex flex-col items-end gap-2 shrink-0">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${strengthColor(rec.strength)}`}>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full font-medium ${strengthColor(rec.strength)}`}
+                        >
                           {rec.strength}
                         </span>
                         <div className="flex items-center gap-1 text-primary">
                           <Star className="w-3.5 h-3.5 fill-primary" />
-                          <span className="text-sm font-medium">{rec.rating}</span>
+                          <span className="text-sm font-medium">
+                            {rec.rating}
+                          </span>
                         </div>
                       </div>
                     </div>
-
                     <div className="flex flex-wrap gap-2 mb-3">
                       {rec.flavors?.map((f, j) => (
-                        <span key={j} className="text-xs bg-muted px-2 py-1 rounded-full">
+                        <span
+                          key={j}
+                          className="text-xs bg-muted px-2 py-1 rounded-full"
+                        >
                           {f}
                         </span>
                       ))}
                     </div>
-
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      <span className="text-foreground font-medium">Why you'll love it: </span>
+                      <span className="text-foreground font-medium">
+                        Why you'll love it:{" "}
+                      </span>
                       {rec.reason}
                     </p>
                   </Card>

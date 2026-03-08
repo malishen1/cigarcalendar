@@ -186,14 +186,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           startDate.getDate(),
           startDate.getHours(),
           startDate.getMinutes(),
-        ],
+        ] as [number, number, number, number, number],
         end: [
           endDate.getFullYear(),
           endDate.getMonth() + 1,
           endDate.getDate(),
           endDate.getHours(),
           endDate.getMinutes(),
-        ],
+        ] as [number, number, number, number, number],
         title: `Cigar Session: ${title}`,
         description: cigar.notes
           ? `Enjoyed ${title}\n\nRating: ${cigar.rating}/5 stars\n\nNotes: ${cigar.notes}`
@@ -382,6 +382,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(post);
     } catch (error) {
       res.status(500).json({ error: "Failed to comment on post" });
+    }
+  });
+
+  app.post("/api/ai/recommendations", async (req, res) => {
+    try {
+      const { history } = req.body;
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY || "",
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          system: `You are a world-class cigar sommelier. Analyze the user's cigar history and recommend 3 cigars they would love. Respond ONLY with a JSON array, no markdown, no explanation. Format: [{"name":"cigar name","brand":"brand name","strength":"Mild/Medium/Full","flavors":["flavor1","flavor2","flavor3"],"reason":"why they'll love it based on their history","rating":"e.g. 93/100"}]`,
+          messages: [
+            {
+              role: "user",
+              content: `Based on my cigar history, recommend 3 cigars I would love: ${JSON.stringify(history)}`,
+            },
+          ],
+        }),
+      });
+      const data = await response.json();
+      const text = data.content?.[0]?.text || "[]";
+      const parsed = JSON.parse(text.replace(/```json|```/g, "").trim());
+      res.json(parsed);
+    } catch (error) {
+      console.error("AI error:", error);
+      res.status(500).json({ error: "Failed to get recommendations" });
     }
   });
 
