@@ -12,6 +12,7 @@ import Releases from "@/pages/Releases";
 import Events from "@/pages/Events";
 import Community from "@/pages/Community";
 import AI from "@/pages/AI";
+import Admin from "@/pages/Admin";
 import Landing from "@/pages/Landing";
 import NotFound from "@/pages/not-found";
 import Footer from "@/components/Footer";
@@ -139,6 +140,7 @@ function Router() {
       <Route path="/releases" component={Releases} />
       <Route path="/events" component={Events} />
       <Route path="/ai" component={AI} />
+      <Route path="/admin" component={Admin} />
       <Route path="/community" component={Community} />
       <Route component={NotFound} />
     </Switch>
