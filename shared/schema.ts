@@ -89,6 +89,19 @@ export const communityPosts = pgTable("community_posts", {
   imageUrl: text("image_url"),
 });
 
+export const postLikes = pgTable("post_likes", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  postId: varchar("post_id")
+    .notNull()
+    .references(() => communityPosts.id),
+  userId: varchar("user_id")
+    .notNull()
+    .references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const postComments = pgTable("post_comments", {
   id: varchar("id")
     .primaryKey()
@@ -108,45 +121,23 @@ export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
 });
-
 export const upsertUserSchema = z.object({
   id: z.string(),
   username: z.string().optional(),
   email: z.string().email().optional(),
 });
-
 export const insertCigarSchema = createInsertSchema(cigars)
-  .omit({
-    id: true,
-    calendarEventId: true,
-  })
-  .extend({
-    date: z.coerce.date(),
-  });
-
+  .omit({ id: true, calendarEventId: true })
+  .extend({ date: z.coerce.date() });
 export const insertReleaseSchema = createInsertSchema(releases).omit({
   id: true,
 });
-
 export const insertEventSchema = createInsertSchema(events)
-  .omit({
-    id: true,
-  })
-  .extend({
-    date: z.coerce.date(),
-  });
-
+  .omit({ id: true })
+  .extend({ date: z.coerce.date() });
 export const insertCommunityPostSchema = createInsertSchema(communityPosts)
-  .omit({
-    id: true,
-    timestamp: true,
-    likes: true,
-    comments: true,
-  })
-  .extend({
-    imageUrl: z.string().optional(),
-  });
-
+  .omit({ id: true, timestamp: true, likes: true, comments: true })
+  .extend({ imageUrl: z.string().optional() });
 export const insertPostCommentSchema = createInsertSchema(postComments).omit({
   id: true,
   timestamp: true,
@@ -154,18 +145,13 @@ export const insertPostCommentSchema = createInsertSchema(postComments).omit({
 
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
-
 export type InsertCigar = z.infer<typeof insertCigarSchema>;
 export type Cigar = typeof cigars.$inferSelect;
-
 export type InsertRelease = z.infer<typeof insertReleaseSchema>;
 export type Release = typeof releases.$inferSelect;
-
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
-
 export type InsertCommunityPost = z.infer<typeof insertCommunityPostSchema>;
 export type CommunityPost = typeof communityPosts.$inferSelect;
-
 export type InsertPostComment = z.infer<typeof insertPostCommentSchema>;
 export type PostComment = typeof postComments.$inferSelect;
