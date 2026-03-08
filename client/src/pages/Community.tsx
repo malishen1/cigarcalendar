@@ -21,18 +21,25 @@ function StoriesBar({
   posts: any[];
   onUserClick: (username: string) => void;
 }) {
+  const TWO_HOURS = 1000 * 60 * 60 * 2;
   const recent = posts.filter((p) => {
     const age = Date.now() - new Date(p.timestamp).getTime();
-    return age < 1000 * 60 * 60 * 24;
+    return age < TWO_HOURS;
   });
-  if (recent.length === 0) return null;
+  const seen = new Set<string>();
+  const unique = recent.filter((p) => {
+    if (seen.has(p.userName)) return false;
+    seen.add(p.userName);
+    return true;
+  });
+  if (unique.length === 0) return null;
   return (
     <div className="mb-8">
       <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground font-light mb-4">
         Currently Smoking
       </p>
       <div className="flex gap-5 overflow-x-auto pb-2">
-        {recent.slice(0, 10).map((post: any, i: number) => {
+        {unique.slice(0, 10).map((post: any, i: number) => {
           const initials =
             post.userName
               ?.split(" ")
