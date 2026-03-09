@@ -36,19 +36,19 @@ function Navigation() {
   const { user } = useAuth();
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: Home },
+    { path: "/", label: "Home", icon: Home },
     { path: "/log", label: "Log", icon: Plus },
     { path: "/history", label: "History", icon: HistoryIcon },
     { path: "/releases", label: "Releases", icon: Sparkles },
     { path: "/events", label: "Events", icon: Calendar },
     { path: "/ai", label: "AI", icon: Wand2 },
-    { path: "/community", label: "Community", icon: UsersIcon },
+    { path: "/community", label: "Social", icon: UsersIcon },
   ];
 
   return (
     <>
       <header className="border-b border-border sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="max-w-7xl mx-auto px-6 md:px-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-14">
             <button
               onClick={() => setLocation("/")}
@@ -122,7 +122,7 @@ function Navigation() {
       </header>
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="grid grid-cols-7 h-14">
+        <div className="flex h-14 safe-area-bottom">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path;
@@ -130,13 +130,13 @@ function Navigation() {
               <button
                 key={item.path}
                 onClick={() => setLocation(item.path)}
-                className="flex flex-col items-center justify-center gap-1 h-full"
+                className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full px-0.5"
               >
                 <Icon
-                  className={`w-4 h-4 ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                  className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`}
                 />
                 <span
-                  className={`text-[9px] uppercase tracking-wider ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+                  className={`text-[8px] uppercase tracking-wide leading-tight text-center w-full truncate ${isActive ? "text-foreground" : "text-muted-foreground"}`}
                 >
                   {item.label}
                 </span>
@@ -189,7 +189,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen pb-14 lg:pb-0">
+        <div className="min-h-screen pb-16 lg:pb-0">
           <Navigation />
           <Router />
           <Footer />
