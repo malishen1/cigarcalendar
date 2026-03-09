@@ -15,20 +15,14 @@ import {
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
-// Optional ics import - fails gracefully if not installed
-let createEvents: any = null;
-try {
-  createEvents = require("ics").createEvents;
-} catch (e) {
-  // ics package not installed - calendar download feature will be disabled
-  console.warn("ics package not found - calendar .ics download feature disabled");
-}
-
 const PgSession = connectPg(session);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  app.set("trust proxy", 1);
+
   app.use(
     session({
+      name: "cigar_sid",
       store: new PgSession({
         conString: process.env.DATABASE_URL,
         tableName: "session",
@@ -41,6 +35,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         secure: false,
         httpOnly: true,
         maxAge: 7 * 24 * 60 * 60 * 1000,
+        sameSite: "lax",
       },
     }),
   );
@@ -76,10 +71,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await storage.authenticateUser(username, password);
       if (!user)
         return res.status(401).json({ message: "Invalid credentials" });
-      (req as any).session.userId = user.id;
-      (req as any).session.username = user.username;
-      await new Promise((resolve) => (req as any).session.save(resolve));
-      res.json({ id: user.id, username: user.username, email: user.email });
+      (req as any).session.regenerate((err: any) => {
+        if (err) return res.status(500).json({ message: "Session error" });
+        (req as any).session.userId = user.id;
+        (req as any).session.username = user.username;
+        (req as any).session.save((err: any) => {
+          if (err)
+            return res.status(500).json({ message: "Session save error" });
+          res.json({ id: user.id, username: user.username, email: user.email });
+        });
+      });
     } catch (error) {
       console.error("Signin error:", error);
       res.status(500).json({ message: "Failed to sign in" });
@@ -88,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/logout", async (req, res) => {
     (req as any).session.destroy((err: any) => {
-      res.clearCookie('connect.sid');
+      res.clearCookie("cigar_sid");
       if (err) return res.status(500).json({ message: "Failed to logout" });
       res.json({ message: "Logged out successfully" });
     });
@@ -96,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/logout", async (req, res) => {
     (req as any).session.destroy(() => {
-      res.clearCookie('connect.sid');
+      res.clearCookie("cigar_sid");
       res.redirect("/");
     });
   });
@@ -215,44 +216,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startDate = new Date(cigar.date);
       const endDate = new Date(cigar.date);
       endDate.setMinutes(endDate.getMinutes() + (cigar.duration || 60));
-      const event = {
-        start: [
-          startDate.getFullYear(),
-          startDate.getMonth() + 1,
-          startDate.getDate(),
-          startDate.getHours(),
-          startDate.getMinutes(),
-        ] as [number, number, number, number, number],
-        end: [
-          endDate.getFullYear(),
-          endDate.getMonth() + 1,
-          endDate.getDate(),
-          endDate.getHours(),
-          endDate.getMinutes(),
-        ] as [number, number, number, number, number],
-        title: `Cigar Session: ${title}`,
-        description: cigar.notes
-          ? `Enjoyed ${title}\n\nRating: ${cigar.rating}/5 stars\n\nNotes: ${cigar.notes}`
-          : `Enjoyed ${title}\n\nRating: ${cigar.rating}/5 stars`,
-        status: "CONFIRMED" as const,
-        busyStatus: "FREE" as const,
-      };
-      if (!createEvents) {
-        return res
-          .status(503)
-          .json({ error: "Calendar feature not available" });
-      }
-      const { error, value } = createEvents([event]);
-      if (error)
-        return res
-          .status(500)
-          .json({ error: "Failed to create calendar file" });
+      const format = (d: Date) =>
+        d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+      const icsContent = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nDTSTART:${format(startDate)}\r\nDTEND:${format(endDate)}\r\nSUMMARY:Cigar Session: ${title}\r\nEND:VEVENT\r\nEND:VCALENDAR`;
       res.setHeader("Content-Type", "text/calendar");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename="cigar-session-${cigar.id}.ics"`,
       );
-      res.send(value);
+      res.send(icsContent);
     } catch (error) {
       res.status(500).json({ error: "Failed to download calendar event" });
     }
@@ -441,12 +413,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ],
         }),
       });
-      if (!response.ok) {
-        const err = await response.text();
+      if (!response.ok)
         return res
           .status(response.status)
           .json({ error: `Anthropic API error: ${response.status}` });
-      }
       const data = await response.json();
       const text = data.content?.[0]?.text || "[]";
       const cleaned = text.replace(/```json\n?|```\n?/g, "").trim();
