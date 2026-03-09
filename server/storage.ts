@@ -13,33 +13,28 @@ import {
 import { randomUUID } from "crypto";
 
 export interface IStorage {
-  // User methods
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
-  // Cigar methods
   getCigar(id: string): Promise<Cigar | undefined>;
   getAllCigars(): Promise<Cigar[]>;
   createCigar(cigar: InsertCigar): Promise<Cigar>;
   updateCigar(id: string, cigar: Partial<Cigar>): Promise<Cigar | undefined>;
   deleteCigar(id: string): Promise<boolean>;
   
-  // Release methods
   getRelease(id: string): Promise<Release | undefined>;
   getAllReleases(): Promise<Release[]>;
   createRelease(release: InsertRelease): Promise<Release>;
   updateRelease(id: string, release: Partial<Release>): Promise<Release | undefined>;
   deleteRelease(id: string): Promise<boolean>;
   
-  // Event methods
   getEvent(id: string): Promise<Event | undefined>;
   getAllEvents(): Promise<Event[]>;
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: string, event: Partial<Event>): Promise<Event | undefined>;
   deleteEvent(id: string): Promise<boolean>;
   
-  // Community post methods
   getCommunityPost(id: string): Promise<CommunityPost | undefined>;
   getAllCommunityPosts(): Promise<CommunityPost[]>;
   createCommunityPost(post: InsertCommunityPost): Promise<CommunityPost>;
@@ -145,7 +140,6 @@ export class MemStorage implements IStorage {
     console.log('[Seed] Seeding complete');
   }
 
-  // User methods
   async getUser(id: string): Promise<User | undefined> {
     return this.users.get(id);
   }
@@ -163,7 +157,6 @@ export class MemStorage implements IStorage {
     return user;
   }
 
-  // Cigar methods
   async getCigar(id: string): Promise<Cigar | undefined> {
     return this.cigars.get(id);
   }
@@ -204,7 +197,6 @@ export class MemStorage implements IStorage {
     return this.cigars.delete(id);
   }
 
-  // Release methods
   async getRelease(id: string): Promise<Release | undefined> {
     return this.releases.get(id);
   }
@@ -243,7 +235,6 @@ export class MemStorage implements IStorage {
     return this.releases.delete(id);
   }
 
-  // Event methods
   async getEvent(id: string): Promise<Event | undefined> {
     return this.events.get(id);
   }
@@ -283,7 +274,6 @@ export class MemStorage implements IStorage {
     return this.events.delete(id);
   }
 
-  // Community post methods
   async getCommunityPost(id: string): Promise<CommunityPost | undefined> {
     return this.communityPosts.get(id);
   }
