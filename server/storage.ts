@@ -8,14 +8,22 @@ import {
   type Event,
   type InsertEvent,
   type CommunityPost,
-  type InsertCommunityPost
+  type InsertCommunityPost,
+  users,
+  cigars,
+  releases,
+  events,
+  communityPosts
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { db } from "../db/index";
+import { eq, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: { username: string; email: string; password: string }): Promise<User>;
+  authenticateUser(username: string, password: string): Promise<User | null>;
   
   getCigar(id: string): Promise<Cigar | undefined>;
   getAllCigars(): Promise<Cigar[]>;
@@ -34,291 +42,204 @@ export interface IStorage {
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: string, event: Partial<Event>): Promise<Event | undefined>;
   deleteEvent(id: string): Promise<boolean>;
+  rsvpEvent(id: string): Promise<Event | null>;
   
   getCommunityPost(id: string): Promise<CommunityPost | undefined>;
   getAllCommunityPosts(): Promise<CommunityPost[]>;
   createCommunityPost(post: InsertCommunityPost): Promise<CommunityPost>;
+  deleteCommunityPost(id: string): Promise<boolean>;
   likeCommunityPost(id: string): Promise<CommunityPost | undefined>;
   commentOnCommunityPost(id: string): Promise<CommunityPost | undefined>;
+  hasLiked(postId: string, userId: string): Promise<boolean>;
+  toggleLike(postId: string, userId: string): Promise<{ liked: boolean; likes: number }>;
+  getComments(postId: string): Promise<any[]>;
+  createComment(comment: any): Promise<any>;
+  deleteComment(id: string): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private cigars: Map<string, Cigar>;
-  private releases: Map<string, Release>;
-  private events: Map<string, Event>;
-  private communityPosts: Map<string, CommunityPost>;
-
-  constructor() {
-    this.users = new Map();
-    this.cigars = new Map();
-    this.releases = new Map();
-    this.events = new Map();
-    this.communityPosts = new Map();
-    this.seedIfEmpty();
+class DbStorage implements IStorage {
+  constructor() { 
+    this.seedIfEmpty(); 
   }
 
-  async seedIfEmpty(): Promise<void> {
-    console.log('[Seed] Checking if seeding needed...');
-    
-    const existingReleases = Array.from(this.releases.values());
-    const existingEvents = Array.from(this.events.values());
-
-    if (existingReleases.length === 0) {
-      console.log('Seeding releases...');
-      const defaultReleases: InsertRelease[] = [
-        {
-          name: "Cohiba Behike",
-          brand: "Cohiba",
-          releaseDate: new Date("2024-04-15"),
-          region: "Cuba",
-          availability: "Limited",
-          description: "Premium limited edition release"
-        },
-        {
-          name: "Davidoff 702 Series",
-          brand: "Davidoff",
-          releaseDate: new Date("2024-03-20"),
-          region: "UK & Europe",
-          availability: "Available",
-          description: "Expertly crafted blended cigar"
-        },
-        {
-          name: "Padron 1964 Anniversary",
-          brand: "Padron",
-          releaseDate: new Date("2024-05-01"),
-          region: "Nicaragua",
-          availability: "Upcoming",
-          description: "Anniversary series release"
-        }
-      ];
-
-      for (const release of defaultReleases) {
-        await this.createRelease(release);
+  private async seedIfEmpty() {
+    try {
+      const existingReleases = await db.select().from(releases).limit(1);
+      if (existingReleases.length === 0) {
+        await db.insert(releases).values([
+          { name: 'Cohiba Behike BHK 52', brand: 'Cohiba', releaseDate: new Date('2026-04-15'), region: 'UK & Europe', availability: 'Limited', description: 'Ultra-premium Behike line with limited UK & Europe allocation.' },
+          { name: 'Montecristo No. 2 Edición Limitada', brand: 'Montecristo', releaseDate: new Date('2026-05-01'), region: 'UK & Europe', availability: 'Limited', description: 'Special limited edition aged 18 months for added complexity.' },
+          { name: 'Romeo y Julieta Wide Churchills', brand: 'Romeo y Julieta', releaseDate: new Date('2026-03-20'), region: 'UK', availability: 'Available', description: 'Wider ring gauge take on the classic Churchill format.' },
+        ]);
       }
-      console.log(`[Seed] Created ${defaultReleases.length} releases`);
-    }
-
-    if (existingEvents.length === 0) {
-      console.log('Seeding events...');
-      const defaultEvents: InsertEvent[] = [
-        {
-          name: "London Cigar Festival",
-          date: new Date("2024-06-15"),
-          location: "London, UK",
-          type: "Festival",
-          description: "Annual celebration of fine cigars",
-          attendees: 500,
-          link: "https://londonciagarfestival.com"
-        },
-        {
-          name: "Davidoff Tasting Event",
-          date: new Date("2024-04-20"),
-          location: "Geneva, Switzerland",
-          type: "Tasting",
-          description: "Exclusive Davidoff cigar tasting",
-          attendees: 50,
-          link: "https://davidoff.com/events"
-        },
-        {
-          name: "Virtual Lounge Night",
-          date: new Date("2024-03-25"),
-          location: "Online",
-          type: "Virtual",
-          description: "Join fellow enthusiasts online",
-          attendees: 200,
-          link: "https://cigarcalendar.com/lounge"
-        }
-      ];
-
-      for (const event of defaultEvents) {
-        await this.createEvent(event);
+      const existingEvents = await db.select().from(events).limit(1);
+      if (existingEvents.length === 0) {
+        await db.insert(events).values([
+          { name: 'London Cigar Tasting Evening', date: new Date('2026-04-18T19:00:00'), location: "Davidoff of London, St James's", type: 'Tasting', description: 'Exclusive evening of premium Cuban cigars paired with aged rum.', attendees: 12 },
+          { name: 'Manchester Cigar Social', date: new Date('2026-05-03T18:30:00'), location: 'The Smoking Room, Manchester', type: 'Social', description: 'Monthly meetup for cigar enthusiasts in the North West.', attendees: 8 },
+          { name: 'European Cigar Festival 2026', date: new Date('2026-06-20T10:00:00'), location: 'Amsterdam, Netherlands', type: 'Festival', description: 'Premier cigar festival in Europe. 50+ brands and exclusive releases.', attendees: 320 },
+        ]);
       }
-      console.log(`[Seed] Created ${defaultEvents.length} events`);
+    } catch (e) { 
+      console.error('Seed error:', e); 
     }
-
-    console.log('[Seed] Seeding complete');
   }
 
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return db.select().from(users);
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+  async createUser(userData: { username: string; email: string; password: string }): Promise<User> {
+    const result = await db.insert(users).values({ username: userData.username, password: userData.password }).returning();
+    return result[0];
+  }
+
+  async authenticateUser(username: string, password: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (!user || user.password !== password) return null;
     return user;
   }
 
   async getCigar(id: string): Promise<Cigar | undefined> {
-    return this.cigars.get(id);
+    const result = await db.select().from(cigars).where(eq(cigars.id, id)).limit(1);
+    return result[0];
   }
 
   async getAllCigars(): Promise<Cigar[]> {
-    return Array.from(this.cigars.values()).sort((a, b) => 
-      new Date(b.date).getTime() - new Date(a.date).getTime()
-    );
+    return db.select().from(cigars).orderBy(desc(cigars.date));
   }
 
   async createCigar(insertCigar: InsertCigar): Promise<Cigar> {
-    const id = randomUUID();
-    const cigar: Cigar = { 
-      id,
-      cigarName: insertCigar.cigarName,
-      brand: insertCigar.brand ?? null,
-      rating: insertCigar.rating,
-      date: insertCigar.date,
-      notes: insertCigar.notes ?? null,
-      duration: insertCigar.duration ?? null,
-      strength: insertCigar.strength ?? null,
-      calendarEventId: null
-    };
-    this.cigars.set(id, cigar);
-    return cigar;
+    const result = await db.insert(cigars).values(insertCigar).returning();
+    return result[0];
   }
 
   async updateCigar(id: string, updates: Partial<Cigar>): Promise<Cigar | undefined> {
-    const cigar = this.cigars.get(id);
-    if (!cigar) return undefined;
-    
-    const updated = { ...cigar, ...updates };
-    this.cigars.set(id, updated);
-    return updated;
+    const result = await db.update(cigars).set(updates).where(eq(cigars.id, id)).returning();
+    return result[0];
   }
 
   async deleteCigar(id: string): Promise<boolean> {
-    return this.cigars.delete(id);
+    const result = await db.delete(cigars).where(eq(cigars.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getRelease(id: string): Promise<Release | undefined> {
-    return this.releases.get(id);
+    const result = await db.select().from(releases).where(eq(releases.id, id)).limit(1);
+    return result[0];
   }
 
   async getAllReleases(): Promise<Release[]> {
-    return Array.from(this.releases.values()).sort((a, b) => 
-      new Date(a.releaseDate).getTime() - new Date(b.releaseDate).getTime()
-    );
+    return db.select().from(releases).orderBy(releases.releaseDate);
   }
 
   async createRelease(insertRelease: InsertRelease): Promise<Release> {
-    const id = randomUUID();
-    const release: Release = { 
-      id,
-      name: insertRelease.name,
-      brand: insertRelease.brand,
-      releaseDate: insertRelease.releaseDate,
-      region: insertRelease.region,
-      availability: insertRelease.availability,
-      description: insertRelease.description ?? null
-    };
-    this.releases.set(id, release);
-    return release;
+    const result = await db.insert(releases).values(insertRelease).returning();
+    return result[0];
   }
 
   async updateRelease(id: string, updates: Partial<Release>): Promise<Release | undefined> {
-    const release = this.releases.get(id);
-    if (!release) return undefined;
-    
-    const updated = { ...release, ...updates };
-    this.releases.set(id, updated);
-    return updated;
+    const result = await db.update(releases).set(updates).where(eq(releases.id, id)).returning();
+    return result[0];
   }
 
   async deleteRelease(id: string): Promise<boolean> {
-    return this.releases.delete(id);
+    const result = await db.delete(releases).where(eq(releases.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async getEvent(id: string): Promise<Event | undefined> {
-    return this.events.get(id);
+    const result = await db.select().from(events).where(eq(events.id, id)).limit(1);
+    return result[0];
   }
 
   async getAllEvents(): Promise<Event[]> {
-    return Array.from(this.events.values()).sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
+    return db.select().from(events).orderBy(events.date);
   }
 
   async createEvent(insertEvent: InsertEvent): Promise<Event> {
-    const id = randomUUID();
-    const event: Event = { 
-      id,
-      name: insertEvent.name,
-      date: insertEvent.date,
-      location: insertEvent.location,
-      type: insertEvent.type,
-      description: insertEvent.description ?? null,
-      attendees: insertEvent.attendees ?? null,
-      link: insertEvent.link ?? null
-    };
-    this.events.set(id, event);
-    return event;
+    const result = await db.insert(events).values(insertEvent).returning();
+    return result[0];
   }
 
   async updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined> {
-    const event = this.events.get(id);
-    if (!event) return undefined;
-    
-    const updated = { ...event, ...updates };
-    this.events.set(id, updated);
-    return updated;
+    const result = await db.update(events).set(updates).where(eq(events.id, id)).returning();
+    return result[0];
   }
 
   async deleteEvent(id: string): Promise<boolean> {
-    return this.events.delete(id);
+    const result = await db.delete(events).where(eq(events.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async rsvpEvent(id: string): Promise<Event | null> {
+    const event = await this.getEvent(id);
+    if (!event) return null;
+    const result = await db.update(events).set({ attendees: sql`${events.attendees} + 1` }).where(eq(events.id, id)).returning();
+    return result[0] || null;
   }
 
   async getCommunityPost(id: string): Promise<CommunityPost | undefined> {
-    return this.communityPosts.get(id);
+    const result = await db.select().from(communityPosts).where(eq(communityPosts.id, id)).limit(1);
+    return result[0];
   }
 
   async getAllCommunityPosts(): Promise<CommunityPost[]> {
-    return Array.from(this.communityPosts.values()).sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
+    return db.select().from(communityPosts).orderBy(desc(communityPosts.timestamp));
   }
 
   async createCommunityPost(insertPost: InsertCommunityPost): Promise<CommunityPost> {
-    const id = randomUUID();
-    const post: CommunityPost = { 
-      id,
-      userName: insertPost.userName,
-      userAvatar: insertPost.userAvatar ?? null,
-      cigarName: insertPost.cigarName,
-      brand: insertPost.brand ?? null,
-      rating: insertPost.rating,
-      comment: insertPost.comment ?? null,
-      timestamp: new Date(),
-      likes: 0,
-      comments: 0
-    };
-    this.communityPosts.set(id, post);
-    return post;
+    const result = await db.insert(communityPosts).values(insertPost).returning();
+    return result[0];
+  }
+
+  async deleteCommunityPost(id: string): Promise<boolean> {
+    const result = await db.delete(communityPosts).where(eq(communityPosts.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 
   async likeCommunityPost(id: string): Promise<CommunityPost | undefined> {
-    const post = this.communityPosts.get(id);
-    if (!post) return undefined;
-    
-    const updated = { ...post, likes: post.likes + 1 };
-    this.communityPosts.set(id, updated);
-    return updated;
+    const result = await db.update(communityPosts).set({ likes: sql`${communityPosts.likes} + 1` }).where(eq(communityPosts.id, id)).returning();
+    return result[0];
   }
 
   async commentOnCommunityPost(id: string): Promise<CommunityPost | undefined> {
-    const post = this.communityPosts.get(id);
-    if (!post) return undefined;
-    
-    const updated = { ...post, comments: post.comments + 1 };
-    this.communityPosts.set(id, updated);
-    return updated;
+    const result = await db.update(communityPosts).set({ comments: sql`${communityPosts.comments} + 1` }).where(eq(communityPosts.id, id)).returning();
+    return result[0];
+  }
+
+  async hasLiked(postId: string, userId: string): Promise<boolean> {
+    return false;
+  }
+
+  async toggleLike(postId: string, userId: string): Promise<{ liked: boolean; likes: number }> {
+    const post = await this.getCommunityPost(postId);
+    if (!post) return { liked: false, likes: 0 };
+    const updated = await this.likeCommunityPost(postId);
+    return { liked: true, likes: updated?.likes ?? 0 };
+  }
+
+  async getComments(postId: string): Promise<any[]> {
+    return [];
+  }
+
+  async createComment(comment: any): Promise<any> {
+    return comment;
+  }
+
+  async deleteComment(id: string): Promise<boolean> {
+    return true;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DbStorage();
