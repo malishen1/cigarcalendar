@@ -12,9 +12,17 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
 } from "./calendar";
-import { createEvents } from "ics";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+
+// Optional ics import - fails gracefully if not installed
+let createEvents: any = null;
+try {
+  createEvents = require("ics").createEvents;
+} catch (e) {
+  // ics package not installed - calendar download feature will be disabled
+  console.warn("ics package not found - calendar .ics download feature disabled");
+}
 
 const PgSession = connectPg(session);
 
@@ -227,6 +235,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "CONFIRMED" as const,
         busyStatus: "FREE" as const,
       };
+      if (!createEvents) {
+        return res
+          .status(503)
+          .json({ error: "Calendar feature not available" });
+      }
       const { error, value } = createEvents([event]);
       if (error)
         return res
