@@ -15,15 +15,36 @@ import StarRating from "./StarRating";
 import { useState } from "react";
 import { Calendar } from "lucide-react";
 
-export default function QuickLogForm({ onSubmit }: { onSubmit?: (data: any) => void }) {
-  const [rating, setRating] = useState(0);
-  const [cigarName, setCigarName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 16));
-  const [duration, setDuration] = useState("");
-  const [strength, setStrength] = useState("");
-  const [notes, setNotes] = useState("");
-  const [addToCalendar, setAddToCalendar] = useState(true);
+const FLAVOR_OPTIONS = [
+  "Earthy", "Woody", "Leather", "Cedar",
+  "Coffee", "Espresso", "Chocolate", "Cocoa",
+  "Spicy", "Pepper", "Nutmeg",
+  "Sweet", "Honey", "Caramel",
+  "Creamy", "Nutty", "Floral", "Citrus",
+];
+
+export default function QuickLogForm({ onSubmit, defaultValues, isEdit }: { onSubmit?: (data: any) => void; defaultValues?: any; isEdit?: boolean }) {
+  const [rating, setRating] = useState(defaultValues?.rating ?? 0);
+  const [cigarName, setCigarName] = useState(defaultValues?.cigarName ?? "");
+  const [brand, setBrand] = useState(defaultValues?.brand ?? "");
+  const [date, setDate] = useState(
+    defaultValues?.date
+      ? new Date(defaultValues.date).toISOString().slice(0, 16)
+      : new Date().toISOString().slice(0, 16)
+  );
+  const [duration, setDuration] = useState(defaultValues?.duration?.toString() ?? "");
+  const [strength, setStrength] = useState(defaultValues?.strength ?? "");
+  const [notes, setNotes] = useState(defaultValues?.notes ?? "");
+  const [addToCalendar, setAddToCalendar] = useState(defaultValues?.addToCalendar ?? true);
+  const [selectedFlavors, setSelectedFlavors] = useState<string[]>(
+    defaultValues?.flavors ? defaultValues.flavors.split(",").map((f: string) => f.trim()).filter(Boolean) : []
+  );
+
+  const toggleFlavor = (flavor: string) => {
+    setSelectedFlavors(prev =>
+      prev.includes(flavor) ? prev.filter(f => f !== flavor) : [...prev, flavor]
+    );
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +56,9 @@ export default function QuickLogForm({ onSubmit }: { onSubmit?: (data: any) => v
       duration: duration ? parseInt(duration) : undefined,
       strength,
       notes,
+      flavors: selectedFlavors.length > 0 ? selectedFlavors.join(", ") : undefined,
       addToCalendar,
     };
-    console.log("Form submitted:", data);
     if (onSubmit) onSubmit(data);
   };
 
@@ -119,6 +140,26 @@ export default function QuickLogForm({ onSubmit }: { onSubmit?: (data: any) => v
                 {rating} / 5 stars
               </span>
             )}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Flavour Profile</Label>
+          <div className="flex flex-wrap gap-2">
+            {FLAVOR_OPTIONS.map(flavor => (
+              <button
+                key={flavor}
+                type="button"
+                onClick={() => toggleFlavor(flavor)}
+                className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                  selectedFlavors.includes(flavor)
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-foreground border-border hover:border-primary"
+                }`}
+              >
+                {flavor}
+              </button>
+            ))}
           </div>
         </div>
 

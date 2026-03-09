@@ -20,6 +20,7 @@ export const cigars = pgTable("cigars", {
   notes: text("notes"),
   duration: integer("duration"),
   strength: text("strength"),
+  flavors: text("flavors"),
   calendarEventId: text("calendar_event_id"),
 });
 
