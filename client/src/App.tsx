@@ -7,7 +7,6 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Dashboard from "@/pages/Dashboard";
 import LogCigar from "@/pages/LogCigar";
 import EditCigar from "@/pages/EditCigar";
-import History from "@/pages/History";
 import Releases from "@/pages/Releases";
 import Events from "@/pages/Events";
 import Community from "@/pages/Community";
@@ -22,7 +21,7 @@ import Footer from "@/components/Footer";
 import {
   Home,
   Plus,
-  History as HistoryIcon,
+  Archive,
   Calendar,
   Sparkles,
   Users as UsersIcon,
@@ -38,7 +37,7 @@ function Navigation() {
   const navItems = [
     { path: "/", label: "Home", icon: Home },
     { path: "/log", label: "Log", icon: Plus },
-    { path: "/history", label: "History", icon: HistoryIcon },
+    { path: "/vault", label: "Vault", icon: Archive },
     { path: "/releases", label: "New", icon: Sparkles },
     { path: "/events", label: "Events", icon: Calendar },
     { path: "/ai", label: "AI", icon: Wand2 },
@@ -178,7 +177,6 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/log" component={LogCigar} />
       <Route path="/edit/:id" component={EditCigar} />
-      <Route path="/history" component={History} />
       <Route path="/releases" component={Releases} />
       <Route path="/events" component={Events} />
       <Route path="/ai" component={AI} />

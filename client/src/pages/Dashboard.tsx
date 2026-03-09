@@ -1,24 +1,80 @@
 import StatsCard from "@/components/StatsCard";
 import CigarEntryCard, { type CigarEntry } from "@/components/CigarEntryCard";
 import { Button } from "@/components/ui/button";
-import { Cigarette, Star, Calendar, TrendingUp, Plus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Cigarette,
+  Star,
+  Calendar,
+  TrendingUp,
+  Plus,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
 import type { Cigar } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [ratingFilter, setRatingFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("date-desc");
+
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ['/api/stats'],
+    queryKey: ["/api/stats"],
+  });
+  const { data: cigars = [], isLoading: cigarsLoading } = useQuery<Cigar[]>({
+    queryKey: ["/api/cigars"],
   });
 
-  const { data: cigars, isLoading: cigarsLoading } = useQuery<Cigar[]>({
-    queryKey: ['/api/cigars'],
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/cigars/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cigars"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({ title: "Cigar deleted" });
+    },
+    onError: () => toast({ variant: "destructive", title: "Failed to delete" }),
   });
 
-  const recentCigars = cigars?.slice(0, 5) || [];
-  const formattedEntries: CigarEntry[] = recentCigars.map(cigar => ({
+  const filteredEntries = cigars
+    .filter((cigar) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        cigar.cigarName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cigar.brand?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cigar.notes?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRating =
+        ratingFilter === "all" ||
+        (ratingFilter === "5" && cigar.rating === 5) ||
+        (ratingFilter === "4" && cigar.rating >= 4) ||
+        (ratingFilter === "3" && cigar.rating >= 3);
+      return matchesSearch && matchesRating;
+    })
+    .sort((a, b) => {
+      if (sortBy === "date-desc")
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      if (sortBy === "date-asc")
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      if (sortBy === "rating-desc") return b.rating - a.rating;
+      if (sortBy === "rating-asc") return a.rating - b.rating;
+      return 0;
+    });
+
+  const formattedEntries: CigarEntry[] = filteredEntries.map((cigar) => ({
     id: cigar.id,
     cigarName: cigar.cigarName,
     brand: cigar.brand || undefined,
@@ -32,102 +88,166 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-3xl mx-auto px-4 md:px-6 py-8">
+        {/* Header */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
           <div>
-            <h1 className="text-5xl md:text-6xl font-semibold font-serif mb-2">
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground font-light mb-2">
               Your Humidor
-            </h1>
-            <p className="text-muted-foreground">
-              Track and savor every moment
             </p>
+            <h1 className="text-5xl font-serif font-light tracking-wide">
+              Dashboard
+            </h1>
           </div>
-          <Button 
+          <Button
             onClick={() => setLocation("/log")}
-            size="lg" 
-            className="gap-2" 
+            size="lg"
+            className="gap-2 rounded-none text-xs uppercase tracking-widest font-light"
             data-testid="button-quick-log"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Quick Log
           </Button>
         </div>
 
+        {/* Stats */}
         {statsLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+          <div className="grid grid-cols-2 gap-3 mb-10">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-32 bg-card rounded-lg animate-pulse" />
+              <div key={i} className="h-24 bg-card animate-pulse" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+          <div className="grid grid-cols-2 gap-3 mb-10">
             <StatsCard
               title="Total Logged"
-              value={stats?.totalCigars || 0}
+              value={(stats as any)?.totalCigars || 0}
               icon={Cigarette}
               subtitle="All time"
             />
             <StatsCard
               title="Average Rating"
-              value={stats?.avgRating || "0"}
+              value={(stats as any)?.avgRating || "0"}
               icon={Star}
               subtitle="Out of 5 stars"
             />
             <StatsCard
               title="This Month"
-              value={stats?.thisMonth || 0}
+              value={(stats as any)?.thisMonth || 0}
               icon={TrendingUp}
-              subtitle={new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              subtitle={new Date().toLocaleDateString("en-US", {
+                month: "long",
+                year: "numeric",
+              })}
             />
             <StatsCard
               title="Calendar Events"
-              value={stats?.withCalendar || 0}
+              value={(stats as any)?.withCalendar || 0}
               icon={Calendar}
               subtitle="Synced to Google"
             />
           </div>
         )}
 
-        <div className="mb-6">
-          <h2 className="text-3xl md:text-4xl font-semibold font-serif mb-4">
-            Recent Sessions
+        {/* History Section */}
+        <div className="border-t border-border pt-8 mb-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground font-light mb-2">
+            All Sessions
+          </p>
+          <h2 className="text-3xl font-serif font-light tracking-wide mb-6">
+            History
           </h2>
+
+          {/* Filters */}
+          <div className="flex gap-3 flex-wrap mb-6">
+            <div className="flex-1 min-w-[180px] relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search cigars..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 rounded-none text-sm"
+                data-testid="input-search"
+              />
+            </div>
+            <Select value={ratingFilter} onValueChange={setRatingFilter}>
+              <SelectTrigger
+                className="w-[140px] rounded-none text-xs"
+                data-testid="select-rating-filter"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5 mr-2" />
+                <SelectValue placeholder="Rating" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Ratings</SelectItem>
+                <SelectItem value="5">5 Stars</SelectItem>
+                <SelectItem value="4">4+ Stars</SelectItem>
+                <SelectItem value="3">3+ Stars</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger
+                className="w-[140px] rounded-none text-xs"
+                data-testid="select-sort"
+              >
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Newest First</SelectItem>
+                <SelectItem value="date-asc">Oldest First</SelectItem>
+                <SelectItem value="rating-desc">Highest Rated</SelectItem>
+                <SelectItem value="rating-asc">Lowest Rated</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
+        {/* Cigar List */}
         {cigarsLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 bg-card rounded-lg animate-pulse" />
+              <div key={i} className="h-48 bg-card animate-pulse" />
             ))}
           </div>
-        ) : formattedEntries.length > 0 ? (
-          <div className="space-y-4">
-            {formattedEntries.map((entry) => (
-              <CigarEntryCard
-                key={entry.id}
-                entry={entry}
-                onEdit={(id) => console.log('Edit', id)}
-                onDelete={(id) => console.log('Delete', id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-16">
-            <Cigarette className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-medium mb-2">No cigars logged yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Start tracking your cigar journey today
+        ) : formattedEntries.length === 0 && searchQuery === "" ? (
+          <div className="text-center py-20 border border-border">
+            <Cigarette className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-xs uppercase tracking-widest text-muted-foreground font-light mb-6">
+              No cigars logged yet
             </p>
             <Button
               onClick={() => setLocation("/log")}
               size="lg"
-              className="gap-2"
+              className="gap-2 rounded-none text-xs uppercase tracking-widest font-light"
               data-testid="button-log-first"
             >
-              <Plus className="w-5 h-5" />
+              <Plus className="w-4 h-4" />
               Log Your First Cigar
             </Button>
           </div>
+        ) : formattedEntries.length === 0 ? (
+          <div className="text-center py-20 border border-border">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground font-light">
+              No results found
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4">
+              {formattedEntries.map((entry) => (
+                <CigarEntryCard
+                  key={entry.id}
+                  entry={entry}
+                  onEdit={(id) => setLocation(`/edit/${id}`)}
+                  onDelete={(id) => deleteMutation.mutate(id)}
+                />
+              ))}
+            </div>
+            <div className="text-center py-8 text-xs uppercase tracking-widest text-muted-foreground font-light">
+              {filteredEntries.length} of {cigars.length} sessions
+            </div>
+          </>
         )}
       </div>
     </div>
