@@ -13,9 +13,9 @@ import {
   deleteCalendarEvent,
 } from "./calendar";
 import session from "express-session";
-import connectPg from "connect-pg-simple";
+import MemoryStore from "memorystore";
 
-const PgSession = connectPg(session);
+const MemStore = MemoryStore(session);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.set("trust proxy", 1);
@@ -23,11 +23,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(
     session({
       name: "cigar_sid",
-      store: new PgSession({
-        conString: process.env.DATABASE_URL,
-        tableName: "session",
-        createTableIfMissing: true,
-      }),
+      store: new MemStore({ checkPeriod: 86400000 }),
       secret: process.env.SESSION_SECRET || "cigar-calendar-secret-2026",
       resave: false,
       saveUninitialized: false,
