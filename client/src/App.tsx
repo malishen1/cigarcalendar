@@ -15,6 +15,8 @@ import AI from "@/pages/AI";
 import Admin from "@/pages/Admin";
 import Profile from "@/pages/Profile";
 import Landing from "@/pages/Landing";
+import SignIn from "@/pages/SignIn";
+import SignUp from "@/pages/SignUp";
 import NotFound from "@/pages/not-found";
 import Footer from "@/components/Footer";
 import {
@@ -84,7 +86,7 @@ function Navigation() {
             </nav>
 
             <div className="flex items-center gap-4">
-              {user && (
+              {user ? (
                 <button
                   className="text-xs uppercase tracking-widest font-light text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
                   onClick={() => {
@@ -95,6 +97,23 @@ function Navigation() {
                   <LogOut className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Sign Out</span>
                 </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setLocation("/signin")}
+                    className="text-xs uppercase tracking-widest font-light text-muted-foreground hover:text-foreground transition-colors"
+                    data-testid="button-nav-signin"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => setLocation("/signup")}
+                    className="text-xs uppercase tracking-widest font-light text-primary hover:text-primary/80 transition-colors"
+                    data-testid="button-nav-signup"
+                  >
+                    Sign Up
+                  </button>
+                </>
               )}
               <ThemeToggle />
             </div>
@@ -149,6 +168,8 @@ function Router() {
 
   return (
     <Switch>
+      <Route path="/signin" component={SignIn} />
+      <Route path="/signup" component={SignUp} />
       <Route path="/" component={Dashboard} />
       <Route path="/log" component={LogCigar} />
       <Route path="/edit/:id" component={EditCigar} />
