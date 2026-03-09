@@ -1,4 +1,4 @@
-import { Switch, Route, Link, useLocation, useRoute } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,22 +7,32 @@ import ThemeToggle from "@/components/ThemeToggle";
 import Dashboard from "@/pages/Dashboard";
 import LogCigar from "@/pages/LogCigar";
 import History from "@/pages/History";
+import Vault from "@/pages/Vault";
+import AI from "@/pages/AI";
 import Releases from "@/pages/Releases";
 import Events from "@/pages/Events";
 import Community from "@/pages/Community";
 import NotFound from "@/pages/not-found";
-import { Home, Plus, History as HistoryIcon, Calendar, Sparkles, Users } from "lucide-react";
+import { Home, Plus, BookOpen, Sparkles, Users, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function Navigation() {
   const [location, setLocation] = useLocation();
 
-  const navItems = [
-    { path: "/", label: "Dashboard", icon: Home },
+  const bottomNavItems = [
+    { path: "/dashboard", label: "Home", icon: Home },
     { path: "/log", label: "Log", icon: Plus },
-    { path: "/history", label: "History", icon: HistoryIcon },
+    { path: "/community", label: "Community", icon: Users },
+    { path: "/vault", label: "Vault", icon: BookOpen },
+    { path: "/ai", label: "AI", icon: Zap },
+  ];
+
+  const headerNavItems = [
+    { path: "/dashboard", label: "Dashboard", icon: Home },
+    { path: "/log", label: "Log", icon: Plus },
+    { path: "/history", label: "History", icon: BookOpen },
     { path: "/releases", label: "Releases", icon: Sparkles },
-    { path: "/events", label: "Events", icon: Calendar },
+    { path: "/events", label: "Events", icon: Zap },
     { path: "/community", label: "Community", icon: Users },
   ];
 
@@ -32,7 +42,7 @@ function Navigation() {
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="flex items-center justify-between h-16">
             <button
-              onClick={() => setLocation("/")}
+              onClick={() => setLocation("/dashboard")}
               className="flex items-center gap-2 hover-elevate px-2 py-1 rounded-md transition-all"
               data-testid="link-home"
             >
@@ -45,7 +55,7 @@ function Navigation() {
             </button>
 
             <nav className="hidden lg:flex items-center gap-2">
-              {navItems.map((item) => {
+              {headerNavItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location === item.path;
                 return (
@@ -69,8 +79,8 @@ function Navigation() {
       </header>
 
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="grid grid-cols-6 h-16">
-          {navItems.map((item) => {
+        <div className="grid grid-cols-5 h-16">
+          {bottomNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path;
             return (
@@ -78,6 +88,7 @@ function Navigation() {
                 key={item.path}
                 onClick={() => setLocation(item.path)}
                 className="flex flex-col items-center justify-center gap-1 h-full"
+                data-testid={`bottom-nav-${item.label.toLowerCase()}`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
                 <span className={`text-xs ${isActive ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
@@ -95,9 +106,11 @@ function Navigation() {
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/dashboard" component={Dashboard} />
       <Route path="/log" component={LogCigar} />
       <Route path="/history" component={History} />
+      <Route path="/vault" component={Vault} />
+      <Route path="/ai" component={AI} />
       <Route path="/releases" component={Releases} />
       <Route path="/events" component={Events} />
       <Route path="/community" component={Community} />
