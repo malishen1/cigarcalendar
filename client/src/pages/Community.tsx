@@ -7,12 +7,14 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { CommunityPost as CommunityPostSchema } from "@shared/schema";
 
 export default function Community() {
   const [newPost, setNewPost] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: posts = [], isLoading } = useQuery<CommunityPostSchema[]>({
     queryKey: ['/api/community'],
@@ -71,10 +73,19 @@ export default function Community() {
   }));
 
   const handlePost = () => {
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Please sign in to post",
+        description: "You must be logged in to share with the community.",
+      });
+      return;
+    }
+
     if (!newPost.trim()) return;
     
     createPostMutation.mutate({
-      userName: "Anonymous User",
+      userName: user?.username || '',
       cigarName: "Custom Cigar",
       rating: 4,
       comment: newPost,
