@@ -88,13 +88,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/logout", async (req, res) => {
     (req as any).session.destroy((err: any) => {
+      res.clearCookie('connect.sid');
       if (err) return res.status(500).json({ message: "Failed to logout" });
       res.json({ message: "Logged out successfully" });
     });
   });
 
   app.get("/api/logout", async (req, res) => {
-    (req as any).session.destroy((err: any) => {
+    (req as any).session.destroy(() => {
+      res.clearCookie('connect.sid');
       res.redirect("/");
     });
   });
