@@ -39,7 +39,7 @@ function Navigation() {
     { path: "/", label: "Home", icon: Home },
     { path: "/log", label: "Log", icon: Plus },
     { path: "/history", label: "History", icon: HistoryIcon },
-    { path: "/releases", label: "Releases", icon: Sparkles },
+    { path: "/releases", label: "New", icon: Sparkles },
     { path: "/events", label: "Events", icon: Calendar },
     { path: "/ai", label: "AI", icon: Wand2 },
     { path: "/community", label: "Social", icon: UsersIcon },
@@ -47,15 +47,18 @@ function Navigation() {
 
   return (
     <>
-      <header className="border-b border-border sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+        className="border-b border-border sticky top-0 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+      >
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="flex items-center justify-between h-14">
             <button
               onClick={() => setLocation("/")}
-              className="flex items-center gap-3 hover-elevate px-1 py-1 transition-all"
+              className="flex items-center gap-3 px-1 py-1 transition-all"
               data-testid="link-home"
             >
-              <div className="w-6 h-6 rounded-none bg-primary flex items-center justify-center">
+              <div className="w-6 h-6 bg-primary flex items-center justify-center flex-shrink-0">
                 <span className="text-primary-foreground font-serif font-light text-sm">
                   C
                 </span>
@@ -77,7 +80,6 @@ function Navigation() {
                         ? "text-foreground border-b border-primary"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
-                    data-testid={`nav-${item.label.toLowerCase().replace(" ", "-")}`}
                   >
                     {item.label}
                   </button>
@@ -121,8 +123,11 @@ function Navigation() {
         </div>
       </header>
 
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex h-14 safe-area-bottom">
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="flex h-14">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.path;
@@ -130,13 +135,13 @@ function Navigation() {
               <button
                 key={item.path}
                 onClick={() => setLocation(item.path)}
-                className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full px-0.5"
+                className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full"
               >
                 <Icon
                   className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`}
                 />
                 <span
-                  className={`text-[8px] uppercase tracking-wide leading-tight text-center w-full truncate ${isActive ? "text-foreground" : "text-muted-foreground"}`}
+                  className={`text-[8px] uppercase tracking-wide leading-tight ${isActive ? "text-foreground" : "text-muted-foreground"}`}
                 >
                   {item.label}
                 </span>
@@ -189,7 +194,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen pb-16 lg:pb-0">
+        <div
+          className="min-h-screen"
+          style={{ paddingBottom: "calc(56px + env(safe-area-inset-bottom))" }}
+        >
           <Navigation />
           <Router />
           <Footer />
