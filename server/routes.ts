@@ -281,6 +281,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug session route
+  app.get('/api/debug-session', (req: any, res) => {
+    res.json({ sessionId: req.sessionID, userId: req.session.userId, username: req.session.username });
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
