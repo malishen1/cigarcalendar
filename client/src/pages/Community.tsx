@@ -8,13 +8,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocation } from "wouter";
 import type { CommunityPost as CommunityPostSchema } from "@shared/schema";
 
 export default function Community() {
   const [newPost, setNewPost] = useState("");
+  const [expandedComments, setExpandedComments] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [_, navigate] = useLocation();
 
   const { data: posts = [], isLoading } = useQuery<CommunityPostSchema[]>({
     queryKey: ['/api/community'],
@@ -92,6 +95,24 @@ export default function Community() {
     });
   };
 
+  const handleUserClick = (userName: string) => {
+    navigate(`/profile/${userName}`);
+  };
+
+  const getRecentUsers = () => {
+    const now = new Date();
+    const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+    const uniqueUsers = new Set<string>();
+    
+    posts.forEach((post) => {
+      if (new Date(post.timestamp) > twoHoursAgo) {
+        uniqueUsers.add(post.userName);
+      }
+    });
+    
+    return Array.from(uniqueUsers);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-4 md:px-6 py-8">
@@ -103,6 +124,28 @@ export default function Community() {
             See what other aficionados are enjoying right now
           </p>
         </div>
+
+        {getRecentUsers().length > 0 && (
+          <Card className="p-6 mb-6">
+            <h3 className="font-medium text-sm uppercase tracking-wide mb-4 text-muted-foreground">
+              Active Users (Last 2 Hours)
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {getRecentUsers().map((userName) => (
+                <Button
+                  key={userName}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleUserClick(userName)}
+                  data-testid={`button-stories-user-${userName}`}
+                  className="rounded-full"
+                >
+                  {userName}
+                </Button>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <Card className="p-6 mb-6">
           <h3 className="font-medium mb-3">Share what you're smoking</h3>
@@ -133,12 +176,20 @@ export default function Community() {
         ) : formattedPosts.length > 0 ? (
           <div className="space-y-4">
             {formattedPosts.map((post) => (
-              <CommunityPost
-                key={post.id}
-                post={post}
-                onLike={(id) => likeMutation.mutate(id)}
-                onComment={(id) => commentMutation.mutate(id)}
-              />
+              <div key={post.id}>
+                <CommunityPost
+                  post={post}
+                  onLike={(id) => likeMutation.mutate(id)}
+                  onComment={(id) => setExpandedComments(expandedComments === id ? null : id)}
+                  onUserClick={handleUserClick}
+                />
+                {expandedComments === post.id && (
+                  <Card className="mt-2 p-4 bg-muted">
+                    <p className="text-sm text-muted-foreground mb-3">Comments section - view all comments here</p>
+                    <div className="text-xs text-muted-foreground">{post.comments} comment{post.comments !== 1 ? 's' : ''}</div>
+                  </Card>
+                )}
+              </div>
             ))}
           </div>
         ) : (

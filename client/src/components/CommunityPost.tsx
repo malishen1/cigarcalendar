@@ -23,9 +23,10 @@ interface CommunityPostProps {
   post: CommunityPost;
   onLike?: (id: string) => void;
   onComment?: (id: string) => void;
+  onUserClick?: (userName: string) => void;
 }
 
-export default function CommunityPost({ post, onLike, onComment }: CommunityPostProps) {
+export default function CommunityPost({ post, onLike, onComment, onUserClick }: CommunityPostProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
 
@@ -50,7 +51,13 @@ export default function CommunityPost({ post, onLike, onComment }: CommunityPost
 
         <div className="flex-1">
           <div className="mb-2">
-            <p className="font-medium">{post.userName}</p>
+            <button
+              onClick={() => onUserClick?.(post.userName)}
+              className="font-medium hover:underline text-left"
+              data-testid={`button-user-${post.userName}`}
+            >
+              {post.userName}
+            </button>
             <p className="text-sm text-muted-foreground">
               {formatDistanceToNow(post.timestamp, { addSuffix: true })}
             </p>
