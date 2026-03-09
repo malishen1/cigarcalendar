@@ -4,7 +4,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 
 export default function Landing() {
@@ -31,6 +30,7 @@ export default function Landing() {
       const response = await fetch("/api/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           username: signUpData.username,
           email: signUpData.email,
@@ -41,8 +41,7 @@ export default function Landing() {
         const error = await response.json();
         throw new Error(error.message || "Sign up failed");
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      setLocation("/");
+      window.location.href = "/";
     } catch (error: any) {
       toast({
         title: error.message || "Please try again",
@@ -60,6 +59,7 @@ export default function Landing() {
       const response = await fetch("/api/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           username: signInData.username,
           password: signInData.password,
@@ -69,8 +69,7 @@ export default function Landing() {
         const error = await response.json();
         throw new Error(error.message || "Sign in failed");
       }
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-      setLocation("/");
+      window.location.href = "/";
     } catch (error: any) {
       toast({
         title: error.message || "Invalid credentials",
@@ -99,36 +98,59 @@ export default function Landing() {
         <div className="w-full max-w-sm">
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin" data-testid="tab-signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup" data-testid="tab-signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin" data-testid="tab-signin">
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger value="signup" data-testid="tab-signup">
+                Sign Up
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin" className="space-y-4 pt-6">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-username" className="text-xs uppercase tracking-widest font-light">Username</Label>
+                  <Label
+                    htmlFor="signin-username"
+                    className="text-xs uppercase tracking-widest font-light"
+                  >
+                    Username
+                  </Label>
                   <Input
                     id="signin-username"
                     placeholder="Enter your username"
                     value={signInData.username}
-                    onChange={(e) => setSignInData({ ...signInData, username: e.target.value })}
+                    onChange={(e) =>
+                      setSignInData({ ...signInData, username: e.target.value })
+                    }
                     disabled={isLoading}
                     data-testid="input-signin-username"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-xs uppercase tracking-widest font-light">Password</Label>
+                  <Label
+                    htmlFor="signin-password"
+                    className="text-xs uppercase tracking-widest font-light"
+                  >
+                    Password
+                  </Label>
                   <Input
                     id="signin-password"
                     type="password"
                     placeholder="Enter your password"
                     value={signInData.password}
-                    onChange={(e) => setSignInData({ ...signInData, password: e.target.value })}
+                    onChange={(e) =>
+                      setSignInData({ ...signInData, password: e.target.value })
+                    }
                     disabled={isLoading}
                     data-testid="input-signin-password"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-signin">
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                  data-testid="button-signin"
+                >
                   {isLoading ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
@@ -137,53 +159,89 @@ export default function Landing() {
             <TabsContent value="signup" className="space-y-4 pt-6">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-username" className="text-xs uppercase tracking-widest font-light">Username</Label>
+                  <Label
+                    htmlFor="signup-username"
+                    className="text-xs uppercase tracking-widest font-light"
+                  >
+                    Username
+                  </Label>
                   <Input
                     id="signup-username"
                     placeholder="Choose a username"
                     value={signUpData.username}
-                    onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
+                    onChange={(e) =>
+                      setSignUpData({ ...signUpData, username: e.target.value })
+                    }
                     disabled={isLoading}
                     data-testid="input-signup-username"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-xs uppercase tracking-widest font-light">Email</Label>
+                  <Label
+                    htmlFor="signup-email"
+                    className="text-xs uppercase tracking-widest font-light"
+                  >
+                    Email
+                  </Label>
                   <Input
                     id="signup-email"
                     type="email"
                     placeholder="Enter your email"
                     value={signUpData.email}
-                    onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+                    onChange={(e) =>
+                      setSignUpData({ ...signUpData, email: e.target.value })
+                    }
                     disabled={isLoading}
                     data-testid="input-signup-email"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-xs uppercase tracking-widest font-light">Password</Label>
+                  <Label
+                    htmlFor="signup-password"
+                    className="text-xs uppercase tracking-widest font-light"
+                  >
+                    Password
+                  </Label>
                   <Input
                     id="signup-password"
                     type="password"
                     placeholder="Create a password"
                     value={signUpData.password}
-                    onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+                    onChange={(e) =>
+                      setSignUpData({ ...signUpData, password: e.target.value })
+                    }
                     disabled={isLoading}
                     data-testid="input-signup-password"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm-password" className="text-xs uppercase tracking-widest font-light">Confirm Password</Label>
+                  <Label
+                    htmlFor="signup-confirm-password"
+                    className="text-xs uppercase tracking-widest font-light"
+                  >
+                    Confirm Password
+                  </Label>
                   <Input
                     id="signup-confirm-password"
                     type="password"
                     placeholder="Confirm your password"
                     value={signUpData.confirmPassword}
-                    onChange={(e) => setSignUpData({ ...signUpData, confirmPassword: e.target.value })}
+                    onChange={(e) =>
+                      setSignUpData({
+                        ...signUpData,
+                        confirmPassword: e.target.value,
+                      })
+                    }
                     disabled={isLoading}
                     data-testid="input-signup-confirm-password"
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading} data-testid="button-signup">
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                  data-testid="button-signup"
+                >
                   {isLoading ? "Signing Up..." : "Sign Up"}
                 </Button>
               </form>
