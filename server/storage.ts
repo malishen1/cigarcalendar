@@ -60,6 +60,89 @@ export class MemStorage implements IStorage {
     this.releases = new Map();
     this.events = new Map();
     this.communityPosts = new Map();
+    this.seedIfEmpty();
+  }
+
+  async seedIfEmpty(): Promise<void> {
+    console.log('[Seed] Checking if seeding needed...');
+    
+    const existingReleases = Array.from(this.releases.values());
+    const existingEvents = Array.from(this.events.values());
+
+    if (existingReleases.length === 0) {
+      console.log('Seeding releases...');
+      const defaultReleases: InsertRelease[] = [
+        {
+          name: "Cohiba Behike",
+          brand: "Cohiba",
+          releaseDate: new Date("2024-04-15"),
+          region: "Cuba",
+          availability: "Limited",
+          description: "Premium limited edition release"
+        },
+        {
+          name: "Davidoff 702 Series",
+          brand: "Davidoff",
+          releaseDate: new Date("2024-03-20"),
+          region: "UK & Europe",
+          availability: "Available",
+          description: "Expertly crafted blended cigar"
+        },
+        {
+          name: "Padron 1964 Anniversary",
+          brand: "Padron",
+          releaseDate: new Date("2024-05-01"),
+          region: "Nicaragua",
+          availability: "Upcoming",
+          description: "Anniversary series release"
+        }
+      ];
+
+      for (const release of defaultReleases) {
+        await this.createRelease(release);
+      }
+      console.log(`[Seed] Created ${defaultReleases.length} releases`);
+    }
+
+    if (existingEvents.length === 0) {
+      console.log('Seeding events...');
+      const defaultEvents: InsertEvent[] = [
+        {
+          name: "London Cigar Festival",
+          date: new Date("2024-06-15"),
+          location: "London, UK",
+          type: "Festival",
+          description: "Annual celebration of fine cigars",
+          attendees: 500,
+          link: "https://londonciagarfestival.com"
+        },
+        {
+          name: "Davidoff Tasting Event",
+          date: new Date("2024-04-20"),
+          location: "Geneva, Switzerland",
+          type: "Tasting",
+          description: "Exclusive Davidoff cigar tasting",
+          attendees: 50,
+          link: "https://davidoff.com/events"
+        },
+        {
+          name: "Virtual Lounge Night",
+          date: new Date("2024-03-25"),
+          location: "Online",
+          type: "Virtual",
+          description: "Join fellow enthusiasts online",
+          attendees: 200,
+          link: "https://cigarcalendar.com/lounge"
+        }
+      ];
+
+      for (const event of defaultEvents) {
+        await this.createEvent(event);
+      }
+      console.log(`[Seed] Created ${defaultEvents.length} events`);
+    }
+
+    console.log('[Seed] Seeding complete');
   }
 
   // User methods
